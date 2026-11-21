@@ -576,6 +576,30 @@ html.sm.sm-lyrics [data-testid="lyrics-page"] > header {
   pointer-events: none !important;
 }
 
+/* Pastikan Lirik selalu 100% lebar penuh meski sebelumnya dibuka langsung dari tab Antrean tanpa klik X */
+html.sm.sm-lyrics .sm-lyr-side-hide {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  flex: 0 0 0px !important;
+}
+
+html.sm.sm-lyrics .sm-lyr-row {
+  --right-sidebar-width: 0px !important;
+  --panel-width: 0px !important;
+  gap: 0 !important;
+  column-gap: 0 !important;
+}
+
+html.sm.sm-lyrics .sm-lyr-full {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  grid-column: 1 / -1 !important;
+}
+
 /* Sembunyikan popover pilih playlist bawaan Spotify saat proses unlike otomatis 1-klik */
 html.sm.sm-unliking [data-tippy-root],
 html.sm.sm-unliking #context-menu,

@@ -395,9 +395,18 @@
                lb.getAttribute('aria-checked') === 'true')) {
       return true;
     }
-    var mv = document.getElementById('main-view');
-    if (mv && mv.querySelector('[data-testid="fullscreen-lyric"], [data-testid="lyrics-line"]')) {
-      return true;
+    if (lb) {
+      try {
+        if (isGreenColor(getComputedStyle(lb).color)) return true;
+        var lsvg = lb.querySelector('svg');
+        if (lsvg && (isGreenColor(getComputedStyle(lsvg).fill) || isGreenColor(getComputedStyle(lsvg).color))) return true;
+      } catch (e) {}
+    }
+    var lyrNodes = document.querySelectorAll('[data-testid="fullscreen-lyric"], [data-testid="lyrics-line"]');
+    for (var i = 0; i < lyrNodes.length; i++) {
+      if (!lyrNodes[i].closest('.sm-qpanel, #Desktop_PanelContainer_Id, .Root__right-sidebar, [data-testid="lyrics-npv-section"]')) {
+        return true;
+      }
     }
     return false;
   }
@@ -418,6 +427,50 @@
       if (r.height > 0 && r.height <= 58 && r.width > 0 && r.width <= 72 && r.top >= -4 && r.top < 78) {
         b.classList.add('sm-lyr-hide');
       }
+    }
+  }
+
+  function fixLyricsLayout() {
+    if (!html.classList.contains('sm-lyrics')) return;
+    cleanLyricsTopBar();
+
+    // Deteksi jika panel Lirik terjepit oleh panel/space kosong di sisi kanan (misal pindah langsung dari Antrean)
+    var lyrNodes = document.querySelectorAll('[data-testid="fullscreen-lyric"], [data-testid="lyrics-line"]');
+    var lyr = null;
+    for (var i = 0; i < lyrNodes.length; i++) {
+      if (!lyrNodes[i].closest('.sm-qpanel, #Desktop_PanelContainer_Id, .Root__right-sidebar, [data-testid="lyrics-npv-section"]')) {
+        lyr = lyrNodes[i];
+        break;
+      }
+    }
+    if (!lyr) return;
+
+    var vw = window.innerWidth || 360;
+    var vh = window.innerHeight || 640;
+    var cur = lyr;
+    for (var depth = 0; depth < 16 && cur && cur.parentElement && cur.parentElement !== document.body; depth++) {
+      var cr = cur.getBoundingClientRect();
+      var pr = cur.parentElement.getBoundingClientRect();
+      if (cr.width > 120 && cr.width < vw * 0.92 && pr.width >= vw * 0.92 && cr.height > vh * 0.35) {
+        var parent = cur.parentElement;
+        var kids = parent.children;
+        var foundRightSib = false;
+        for (var k = 0; k < kids.length; k++) {
+          var sib = kids[k];
+          if (sib === cur || sib === root || (root && root.contains(sib))) continue;
+          var sr = sib.getBoundingClientRect();
+          if (sr.width > 30 && sr.left >= cr.right - 24 && sr.height > vh * 0.3) {
+            sib.classList.add('sm-lyr-side-hide');
+            foundRightSib = true;
+          }
+        }
+        if (foundRightSib) {
+          cur.classList.add('sm-lyr-full');
+          parent.classList.add('sm-lyr-row');
+          break;
+        }
+      }
+      cur = cur.parentElement;
     }
   }
 
@@ -610,10 +663,25 @@
 
   function isQueueBtnActive(qb) {
     if (!qb) return false;
-    return qb.getAttribute('aria-pressed') === 'true' ||
-      qb.getAttribute('aria-checked') === 'true' ||
-      qb.getAttribute('aria-expanded') === 'true' ||
-      qb.getAttribute('data-active') === 'true';
+    if (qb.getAttribute('aria-pressed') === 'true' ||
+        qb.getAttribute('aria-checked') === 'true' ||
+        qb.getAttribute('aria-expanded') === 'true' ||
+        qb.getAttribute('data-active') === 'true') {
+      return true;
+    }
+    var lb = (qb.getAttribute('aria-label') || '').toLowerCase();
+    if (lb.indexOf('tutup') > -1 || lb.indexOf('sembunyikan') > -1 ||
+        lb.indexOf('hide') > -1 || lb.indexOf('close') > -1) {
+      return true;
+    }
+    try {
+      if (isGreenColor(getComputedStyle(qb).color)) return true;
+      var svg = qb.querySelector('svg');
+      if (svg && (isGreenColor(getComputedStyle(svg).fill) || isGreenColor(getComputedStyle(svg).color))) {
+        return true;
+      }
+    } catch (e) {}
+    return false;
   }
 
   var panelMode = 'queue';
@@ -623,17 +691,22 @@
     if (b) return b;
     var npb = q('now-playing-bar');
     if (!npb) return null;
+    var npw = q('now-playing-widget-v2', npb) || q('now-playing-widget', npb);
     // 1. Cocokkan aria-label (Bahasa Indonesia & Inggris: "Tampilan Sedang Memutar", "Sekarang memutar", "Now playing view")
     var btns = npb.querySelectorAll('button[aria-label]');
     for (var i = 0; i < btns.length; i++) {
-      var lb = (btns[i].getAttribute('aria-label') || '').toLowerCase();
+      var btn = btns[i];
+      if (npw && npw.contains(btn)) continue;
+      var lb = (btn.getAttribute('aria-label') || '').toLowerCase();
+      if (lb.indexOf('perluas') > -1 || lb.indexOf('expand') > -1 ||
+          lb.indexOf('gambar') > -1 || lb.indexOf('cover') > -1) continue;
       if ((lb.indexOf('tampilan') > -1 && (lb.indexOf('memutar') > -1 || lb.indexOf('diputar') > -1)) ||
           lb.indexOf('now playing view') > -1 ||
           lb.indexOf('sedang memutar') > -1 ||
           lb.indexOf('sekarang memutar') > -1 ||
           lb.indexOf('sedang diputar') > -1 ||
           lb.indexOf('now playing') > -1) {
-        return btns[i];
+        return btn;
       }
     }
     // 2. Fallback struktural: tombol tepat di sebelah kiri tombol Lirik atau Antrean di bar bawah kanan Spotify
@@ -644,10 +717,42 @@
     return null;
   }
 
+  function isExcludedSidebarNode(node) {
+    if (!node) return true;
+    var lsb = document.getElementById('Desktop_LeftSidebar_Id');
+    var navb = q('global-nav-bar');
+    var npb = q('now-playing-bar');
+    if (node === lsb || (lsb && lsb.contains(node))) return true;
+    if (root && (node === root || root.contains(node))) return true;
+    if (navb && (node === navb || navb.contains(node))) return true;
+    if (npb && (node === npb || npb.contains(node))) return true;
+    return false;
+  }
+
+  function getRightSidebarRoot() {
+    var mv = document.getElementById('main-view');
+    var cands = [
+      document.getElementById('Desktop_PanelContainer_Id'),
+      document.querySelector('.Root__right-sidebar'),
+      q('right-sidebar-container')
+    ];
+    for (var i = 0; i < cands.length; i++) {
+      var c = cands[i];
+      if (c && c !== mv && !isExcludedSidebarNode(c)) return c;
+    }
+    var asides = document.querySelectorAll('aside');
+    for (var j = 0; j < asides.length; j++) {
+      var a = asides[j];
+      if ((mv && mv.contains(a)) || isExcludedSidebarNode(a)) continue;
+      return a;
+    }
+    return null;
+  }
+
   function hasQueueContent(node) {
-    if (!node) return false;
+    if (!node || isExcludedSidebarNode(node)) return false;
     if (panelMode === 'info') {
-      if (node.querySelector('[data-testid="NPV_Panel_OpenDiv"], [data-testid="lyrics-npv-section"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"], video, canvas')) {
+      if (node.querySelector('[data-testid="NPV_Panel_OpenDiv"], [data-testid="lyrics-npv-section"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"], [data-testid="credits-card"], [data-testid="canvas-video"], img, video, canvas')) {
         return true;
       }
     } else {
@@ -691,20 +796,27 @@
     }
 
     var primary = (panelMode === 'info')
-      ? (q('NPV_Panel_OpenDiv') || q('lyrics-npv-section') || q('npv-artist-link'))
+      ? (q('NPV_Panel_OpenDiv') || q('lyrics-npv-section') || q('npv-artist-link') || q('credits-card'))
       : q('queue-page');
-    var sideAside = document.querySelector('aside[aria-label*="Antrean"], aside[aria-label*="Queue"], aside[aria-label*="memutar"], aside[aria-label*="diputar"], aside[aria-label*="Now playing"], [role="complementary"]');
+    var sideAside = null;
+    var asides = document.querySelectorAll('aside[aria-label*="Antrean"], aside[aria-label*="Queue"], aside[aria-label*="memutar"], aside[aria-label*="diputar"], aside[aria-label*="Now playing"], aside');
+    for (var ai = 0; ai < asides.length; ai++) {
+      if (!isExcludedSidebarNode(asides[ai]) && (!mv || !mv.contains(asides[ai]))) {
+        sideAside = asides[ai];
+        break;
+      }
+    }
     var candidates = [
       primary,
-      sideAside,
       document.getElementById('Desktop_PanelContainer_Id'),
       document.querySelector('.Root__right-sidebar'),
-      q('right-sidebar-container')
+      q('right-sidebar-container'),
+      sideAside
     ];
     var anchor = null;
     for (var c = 0; c < candidates.length; c++) {
       var cand = candidates[c];
-      if (!cand || cand === mv) continue;
+      if (!cand || cand === mv || isExcludedSidebarNode(cand)) continue;
       if (hasQueueContent(cand)) {
         anchor = cand;
         break;
@@ -724,7 +836,11 @@
         panel = panel.parentElement;
       }
     }
-    if (panel && panel !== mv && (!mv || !panel.contains(mv))) {
+    if (panel && panel !== mv && (!mv || !panel.contains(mv)) && !isExcludedSidebarNode(panel)) {
+      var prevTagged = document.querySelectorAll('.sm-qpanel');
+      for (var pt = 0; pt < prevTagged.length; pt++) {
+        if (prevTagged[pt] !== panel) prevTagged[pt].classList.remove('sm-qpanel');
+      }
       panel.classList.add('sm-qpanel');
       if (!mv || !mv.contains(panel)) html.classList.add('sm-qsplit');
       hideNPVExpandBtn(panel);
@@ -820,41 +936,76 @@
     return btn;
   }
 
-  function isNPVMounted() {
-    return Boolean(q('NPV_Panel_OpenDiv') || q('lyrics-npv-section') || q('npv-artist-link') || q('npv-artist-bio-button'));
+  function hasRealNPVContent() {
+    if (q('NPV_Panel_OpenDiv') || q('lyrics-npv-section') || q('npv-artist-link') ||
+        q('npv-artist-bio-button') || q('credits-card') || q('canvas-video')) {
+      return true;
+    }
+    if (q('queue-page')) return false;
+    var rsb = getRightSidebarRoot();
+    if (!rsb) return false;
+    if (rsb.querySelector('img, video, canvas')) return true;
+    var txt = (rsb.textContent || '').trim();
+    return txt.length > 20;
   }
 
-  function activateNPVPanel() {
+  function activateNPVPanel(seq) {
     panelMode = 'info';
-    var npvb = findNPVButton();
-    var qb = findQueueButton();
+    var retried = false;
 
-    function ensureMounted(attempt) {
-      if (!html.classList.contains('sm-queue') || panelMode !== 'info') return;
-      if (isNPVMounted()) {
+    function pollNPV(step) {
+      if (seq !== qHarvestSeq || !html.classList.contains('sm-queue') || panelMode !== 'info') return;
+      if (hasRealNPVContent()) {
         revealQueuePanel();
         html.classList.remove('sm-qload');
         return;
       }
-      if (attempt === 0) {
+
+      var npvb = findNPVButton();
+      var qb = findQueueButton();
+
+      if (step === 0) {
         if (npvb) {
           npvb.click();
-        } else if (qb) {
+        } else {
           var xBtn = document.querySelector('[data-testid="queue-page"] button[aria-label="Tutup"], [data-testid="queue-page"] button[aria-label="Close"]');
           if (xBtn) xBtn.click();
+          else if (qb && isQueueBtnActive(qb)) qb.click();
         }
-        setTimeout(function () { ensureMounted(1); }, 220);
-      } else if (attempt === 1) {
-        // Jika klik pertama tadi malah menutup NPV (karena sebelumnya aktif di balik Antrean), klik sekali lagi untuk membukanya
-        if (npvb) npvb.click();
-        setTimeout(function () { ensureMounted(2); }, 240);
+        setTimeout(function () { pollNPV(1); }, 150);
+        return;
+      }
+
+      // Di step 4 (~600ms), hanya klik ulang jika panel benar-benar tertutup (bukan sedang memuat!) atau masih nyangkut di queue-page
+      if (step === 4 && !retried) {
+        retried = true;
+        if (q('queue-page')) {
+          var qx = document.querySelector('[data-testid="queue-page"] button[aria-label="Tutup"], [data-testid="queue-page"] button[aria-label="Close"]');
+          if (qx) qx.click();
+          else if (qb) qb.click();
+          setTimeout(function () {
+            if (seq !== qHarvestSeq || !html.classList.contains('sm-queue') || panelMode !== 'info') return;
+            if (!hasRealNPVContent()) {
+              var n2 = findNPVButton();
+              if (n2 && !isQueueBtnActive(n2)) n2.click();
+            }
+            pollNPV(5);
+          }, 180);
+          return;
+        } else if (npvb && !isQueueBtnActive(npvb)) {
+          npvb.click();
+        }
+      }
+
+      if (step < 10) {
+        setTimeout(function () { pollNPV(step + 1); }, 150);
       } else {
         revealQueuePanel();
         html.classList.remove('sm-qload');
       }
     }
 
-    ensureMounted(0);
+    pollNPV(0);
   }
 
   function harvestAndShowSplit(seq) {
@@ -865,10 +1016,10 @@
       var items = captureQueueFromDOM();
       if (items.length > 0 || tries >= 8) {
         renderQueueList(items);
-        var hasNPV = Boolean(findNPVButton() || q('NPV_Panel_OpenDiv'));
+        var hasNPV = Boolean(findNPVButton() || hasRealNPVContent());
         if (hasNPV) {
           html.classList.remove('sm-qfull');
-          activateNPVPanel();
+          activateNPVPanel(seq);
         } else {
           // Fallback: jika tombol Info/NPV tidak ada, tetap tampilkan Antrean penuh
           html.classList.remove('sm-qload');
@@ -913,10 +1064,35 @@
         tries++;
         setTimeout(findAndPlay, 90);
       } else {
-        activateNPVPanel();
+        activateNPVPanel(seq);
       }
     }
     setTimeout(findAndPlay, 110);
+  }
+
+  function closeSpotifyRightSidebar() {
+    var did = false;
+    var qb = findQueueButton();
+    if (qb && isQueueBtnActive(qb)) {
+      qb.click();
+      did = true;
+    }
+    var npvb = findNPVButton();
+    if (npvb && isQueueBtnActive(npvb)) {
+      npvb.click();
+      did = true;
+    }
+    if (!did) {
+      var rsb = getRightSidebarRoot();
+      if (rsb && (rsb.offsetWidth > 20 || (rsb.textContent || '').trim().length > 20)) {
+        var xBtn = rsb.querySelector('button[aria-label="Tutup"], button[aria-label="Close"], button[aria-label*="Sembunyikan"], button[aria-label*="Hide"]');
+        if (xBtn) {
+          xBtn.click();
+          did = true;
+        }
+      }
+    }
+    return did;
   }
 
   function closeQueue() {
@@ -928,10 +1104,7 @@
     if (wasOpen && location.pathname.indexOf('/queue') === 0 && window.history.length > 1) {
       window.history.back();
     } else if (wasOpen) {
-      var qb = findQueueButton();
-      if (qb && isQueueBtnActive(qb)) qb.click();
-      var npvb = findNPVButton();
-      if (npvb && isQueueBtnActive(npvb)) npvb.click();
+      closeSpotifyRightSidebar();
     }
     updateNavHighlight();
   }
@@ -949,9 +1122,7 @@
   function closeLyrics(skipVeil) {
     if (!skipVeil) flashVeil(280);
     var lb = q('lyrics-button');
-    if (lb && (lb.getAttribute('data-active') === 'true' ||
-               lb.getAttribute('aria-pressed') === 'true' ||
-               lb.getAttribute('aria-checked') === 'true')) {
+    if (lb && isQueueBtnActive(lb)) {
       lb.click();
     } else if (isLyricsOpen()) {
       if (window.history.length > 1) window.history.back();
@@ -988,7 +1159,7 @@
       harvestAndShowSplit(seq);
     }
 
-    if (wasLyrics) setTimeout(launch, 220);
+    if (wasLyrics) setTimeout(launch, 240);
     else launch();
   }
 
@@ -1022,7 +1193,7 @@
 
     updateNavHighlight();
     syncProfile();
-    if (html.classList.contains('sm-lyrics')) cleanLyricsTopBar();
+    if (html.classList.contains('sm-lyrics')) fixLyricsLayout();
 
     // Tampilkan tombol back mengambang di sub-halaman (bukan Beranda, Cari, atau Lirik)
     var subPage = !isHomePath() && !isSearchPath() && !isLyricsOpen();
@@ -1773,18 +1944,30 @@
         showToast('Lirik tidak tersedia untuk lagu ini');
         return;
       }
-      var qb = findQueueButton();
-      if (qb && isQueueBtnActive(qb)) qb.click();
-      var npvb = findNPVButton();
-      if (npvb && isQueueBtnActive(npvb)) npvb.click();
-      html.classList.remove('sm-np', 'sm-lib', 'sm-queue', 'sm-qload', 'sm-qfull', 'sm-qsplit', 'sm-search');
+      var wasQueue = html.classList.contains('sm-queue');
+      qHarvestSeq++;
+      var closedSide = closeSpotifyRightSidebar();
+      html.classList.remove('sm-np', 'sm-lib', 'sm-queue', 'sm-qload', 'sm-qfull', 'sm-qsplit', 'sm-search', 'sm-home');
       var tagged = document.querySelectorAll('.sm-qpanel');
       for (var i = 0; i < tagged.length; i++) tagged[i].classList.remove('sm-qpanel');
-      if (!isLyricsOpen()) lb.click();
       html.classList.add('sm-lyrics');
-      html.classList.remove('sm-home');
-      setTimeout(function () { updateNavHighlight(); cleanLyricsTopBar(); }, 100);
-      setTimeout(function () { updateNavHighlight(); cleanLyricsTopBar(); }, 350);
+
+      function launchLyrics() {
+        var lb2 = q('lyrics-button');
+        if (lb2 && !isLyricsOpen()) lb2.click();
+        updateNavHighlight();
+        fixLyricsLayout();
+        setTimeout(function () { updateNavHighlight(); fixLyricsLayout(); }, 140);
+        setTimeout(function () { updateNavHighlight(); fixLyricsLayout(); }, 400);
+        setTimeout(function () { updateNavHighlight(); fixLyricsLayout(); }, 800);
+      }
+
+      if (wasQueue || closedSide) {
+        flashVeil(260);
+        setTimeout(launchLyrics, 160);
+      } else {
+        launchLyrics();
+      }
     });
 
     // Blokir klik pada semua link/judul/nama artis/Kredit/Tentang artis di dalam panel Info Lagu
