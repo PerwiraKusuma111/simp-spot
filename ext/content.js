@@ -404,18 +404,18 @@
 
   function cleanLyricsTopBar() {
     if (!html.classList.contains('sm-lyrics')) return;
-    var mv = document.getElementById('main-view');
-    if (!mv) return;
-    var firstLyric = mv.querySelector('[data-testid="fullscreen-lyric"], [data-testid="lyrics-line"]');
-    var lyricTop = firstLyric ? firstLyric.getBoundingClientRect().top : 140;
-    var btns = mv.querySelectorAll('button');
-    for (var i = 0; i < btns.length && i < 20; i++) {
+    var sb = document.getElementById('Desktop_LeftSidebar_Id');
+    var navb = q('global-nav-bar');
+    var npb = q('now-playing-bar');
+    var btns = document.querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) {
       var b = btns[i];
       if (b.classList.contains('sm-lyr-hide')) continue;
+      if ((root && root.contains(b)) || (sb && sb.contains(b)) || (navb && navb.contains(b)) || (npb && npb.contains(b))) continue;
       if (b.closest('[data-testid="fullscreen-lyric"], [data-testid="lyrics-line"]')) continue;
       var r = b.getBoundingClientRect();
-      // Sembunyikan tombol-tombol kecil di bagian atas area lirik (terjemahan/vokal/tutup bawaan)
-      if (r.height > 0 && r.height <= 64 && r.top >= 0 && r.top < Math.max(120, lyricTop)) {
+      // Sembunyikan tombol-tombol ikon kecil bawaan Spotify di strip atas layar Lirik (di belakang tombol X)
+      if (r.height > 0 && r.height <= 58 && r.width > 0 && r.width <= 72 && r.top >= -4 && r.top < 78) {
         b.classList.add('sm-lyr-hide');
       }
     }
@@ -920,8 +920,8 @@
     var seq = ++qHarvestSeq;
     panelMode = 'queue';
     var wasLyrics = isLyricsOpen();
-    if (wasLyrics) closeLyrics();
 
+    // Pasang sm-queue + sm-qload SEBELUM menutup Lirik agar Beranda tidak sempat kedip sedikit pun
     html.classList.remove('sm-np', 'sm-lib', 'sm-search', 'sm-qfull', 'sm-qsplit', 'sm-lyrics');
     html.classList.add('sm-queue', 'sm-qload');
     updateNavHighlight();
@@ -930,6 +930,8 @@
       while (qSide.firstChild) qSide.removeChild(qSide.firstChild);
       qSide.appendChild(el('div', '', 'sm-qempty', 'Memuat antrean...'));
     }
+
+    if (wasLyrics) closeLyrics();
 
     function launch() {
       if (seq !== qHarvestSeq || !html.classList.contains('sm-queue')) return;
@@ -940,7 +942,7 @@
       harvestAndShowSplit(seq);
     }
 
-    if (wasLyrics) setTimeout(launch, 240);
+    if (wasLyrics) setTimeout(launch, 220);
     else launch();
   }
 
@@ -1356,7 +1358,7 @@
         var tx = (b.textContent || '').trim().toLowerCase();
         if (tx === 'batal' || tx === 'cancel' || tx === 'selesai' || tx === 'done') {
           var p = b.parentElement;
-          for (var d = 0; d < 7 && p && p !== document.body; d++) {
+          for (var d = 0; d < 12 && p && p !== document.body; d++) {
             var low = (p.textContent || '').toLowerCase();
             if (low.indexOf('lagu yang disukai') > -1 || low.indexOf('liked songs') > -1 ||
                 low.indexOf('tambahkan ke playlist') > -1 || low.indexOf('add to playlist') > -1) {
@@ -1369,52 +1371,80 @@
       return null;
     }
 
+    function clickDoneOrDismiss(pop) {
+      if (!pop) return;
+      var btns = pop.querySelectorAll('button');
+      var clicked = false;
+      for (var k = 0; k < btns.length; k++) {
+        var bt = (btns[k].textContent || '').trim().toLowerCase();
+        if ((bt === 'selesai' || bt === 'done' || bt === 'simpan' || bt === 'save') && !btns[k].disabled) {
+          btns[k].click();
+          clicked = true;
+          break;
+        }
+      }
+      if (!clicked) {
+        for (var k2 = 0; k2 < btns.length; k2++) {
+          var bt2 = (btns[k2].textContent || '').trim().toLowerCase();
+          if (bt2 === 'batal' || bt2 === 'cancel') {
+            btns[k2].click();
+            clicked = true;
+            break;
+          }
+        }
+      }
+      if (!clicked) {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
+      }
+    }
+
+    function findLikedRowInPopover(pop) {
+      // Cari node teks paling dalam yang bertuliskan persis "Lagu yang Disukai" atau "Liked Songs"
+      var all = pop.querySelectorAll('*');
+      var labelEl = null;
+      for (var i = 0; i < all.length; i++) {
+        var el2 = all[i];
+        if (el2.children && el2.children.length > 0) continue;
+        var t = (el2.textContent || '').trim().toLowerCase();
+        if (t === 'lagu yang disukai' || t === 'liked songs') {
+          labelEl = el2;
+          break;
+        }
+      }
+      if (!labelEl) return null;
+      // Naik 1-5 level dari teks untuk mencari checkbox / button / baris yang bisa diklik
+      var cur = labelEl;
+      for (var up = 0; up < 5 && cur && cur !== pop; up++) {
+        var cb = cur.querySelector('input[type="checkbox"], [role="checkbox"], [role="menuitemcheckbox"]');
+        if (cb) return cb;
+        if (cur.tagName === 'BUTTON' || cur.tagName === 'LI' ||
+            cur.getAttribute('role') === 'row' || cur.getAttribute('role') === 'option' ||
+            cur.getAttribute('role') === 'listitem' || cur.getAttribute('role') === 'menuitemcheckbox') {
+          return cur;
+        }
+        cur = cur.parentElement;
+      }
+      return labelEl.parentElement || labelEl;
+    }
+
     function autoUnlikeFromPopover() {
       var tries = 0;
       function step() {
         var pop = findAddPlaylistPopover();
         if (pop) {
           pop.classList.add('sm-hide-pop');
-          // Cari baris / checkbox "Lagu yang Disukai" atau "Liked Songs" lalu klik untuk hapus centang
-          var targetRow = null;
-          var items = pop.querySelectorAll('[role="checkbox"], [aria-checked="true"], input[type="checkbox"], button, [role="option"], [role="listitem"], li, div');
-          for (var j = 0; j < items.length; j++) {
-            var it = items[j];
-            if (it === pop) continue;
-            var t = (it.textContent || it.getAttribute('aria-label') || '').trim().toLowerCase();
-            if ((t.indexOf('lagu yang disukai') > -1 || t.indexOf('liked songs') > -1) && t.length < 80) {
-              // Pilih elemen yang paling spesifik (punya checkbox atau role atau button atau sedikit anak)
-              if (it.matches('button, li, [role="checkbox"], [role="option"], [role="listitem"], input') ||
-                  it.querySelector('input[type="checkbox"], [role="checkbox"]')) {
-                targetRow = it.querySelector('input[type="checkbox"], [role="checkbox"]') || it;
-                break;
-              }
-            }
-          }
+          var targetRow = findLikedRowInPopover(pop);
           if (targetRow) {
             targetRow.click();
             setTimeout(function () {
-              var btns = pop.querySelectorAll('button');
-              var clickedDone = false;
-              for (var k = 0; k < btns.length; k++) {
-                var bt = (btns[k].textContent || '').trim().toLowerCase();
-                if ((bt === 'selesai' || bt === 'done' || bt === 'simpan' || bt === 'save') && !btns[k].disabled) {
-                  btns[k].click();
-                  clickedDone = true;
-                  break;
-                }
-              }
-              if (!clickedDone) {
-                for (var k2 = 0; k2 < btns.length; k2++) {
-                  var bt2 = (btns[k2].textContent || '').trim().toLowerCase();
-                  if (bt2 === 'batal' || bt2 === 'cancel') { btns[k2].click(); break; }
-                }
-              }
+              clickDoneOrDismiss(pop);
               setTimeout(function () {
+                var still = findAddPlaylistPopover();
+                if (still) clickDoneOrDismiss(still);
                 html.classList.remove('sm-unliking');
                 tick();
               }, 200);
-            }, 110);
+            }, 140);
             return;
           }
         }
@@ -1422,6 +1452,8 @@
           tries++;
           setTimeout(step, 65);
         } else {
+          var stuck = findAddPlaylistPopover();
+          if (stuck) clickDoneOrDismiss(stuck);
           html.classList.remove('sm-unliking');
           tick();
         }

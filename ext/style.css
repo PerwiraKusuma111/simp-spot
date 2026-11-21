@@ -86,7 +86,8 @@ html.sm:not(.sm-queue) #main-view ~ div:has([data-testid="lyrics-npv-section"], 
 }
 
 /* Mode Gabungan (Kiri 50%: Info Lagu live di-scale pas agar tidak terpotong, Kanan 50%: daftar Antrean) */
-html.sm.sm-queue.sm-qsplit #main-view {
+html.sm.sm-queue.sm-qsplit #main-view,
+html.sm.sm-queue.sm-qload #main-view {
   visibility: hidden !important;
   pointer-events: none !important;
 }
@@ -520,11 +521,13 @@ html.sm.sm-lyrics:not(.sm-search):not(.sm-lib):not(.sm-queue):not(.sm-np) #sm-lc
   display: inline-flex;
 }
 
-/* Bersihkan tombol-tombol kecil di bagian atas halaman Lirik Spotify */
-html.sm.sm-lyrics #main-view .sm-lyr-hide,
-html.sm.sm-lyrics #main-view [data-testid="lyrics-header"],
-html.sm.sm-lyrics #main-view [data-testid="lyrics-page"] > header {
+/* Bersihkan tombol-tombol kecil di bagian atas halaman Lirik Spotify (termasuk overlay di luar #main-view) */
+html.sm.sm-lyrics .sm-lyr-hide,
+html.sm.sm-lyrics [data-testid="lyrics-header"],
+html.sm.sm-lyrics [data-testid="lyrics-page"] > header {
   display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 /* Sembunyikan popover pilih playlist bawaan Spotify saat proses unlike otomatis 1-klik */
