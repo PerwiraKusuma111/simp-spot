@@ -36,7 +36,7 @@
       html.classList.add('sm');
       html.classList.remove('sm-off-btn');
     } else {
-      html.classList.remove('sm', 'sm-home', 'sm-search', 'sm-lib', 'sm-queue', 'sm-np');
+      html.classList.remove('sm', 'sm-home', 'sm-search', 'sm-lib', 'sm-queue', 'sm-qload', 'sm-qfull', 'sm-qsplit', 'sm-np');
       html.classList.add('sm-off-btn');
     }
     html.classList.toggle('sm-nozoom', Boolean(cfg.enabled && cfg.noZoom));
@@ -217,24 +217,62 @@
     var npb = q('now-playing-bar');
     if (!npb) return null;
     var npw = q('now-playing-widget-v2', npb) || q('now-playing-widget', npb) || npb;
-    var btn = q('add-button', npw);
+    var btn = q('add-button', npw) || q('add-button', npb);
     if (btn) return btn;
-    var btns = npw.querySelectorAll('button[aria-checked], button[aria-label]');
+    var chk = npw.querySelector('button[aria-checked]');
+    if (chk) return chk;
+    var btns = npw.querySelectorAll('button');
+    var fallback = null;
     for (var i = 0; i < btns.length; i++) {
-      var lb = (btns[i].getAttribute('aria-label') || '').toLowerCase();
-      if (lb.indexOf('suka') > -1 || lb.indexOf('like') > -1 || lb.indexOf('save') > -1 ||
-          lb.indexOf('simpan') > -1 || lb.indexOf('koleksi') > -1 || lb.indexOf('library') > -1) {
-        return btns[i];
+      var b = btns[i];
+      var lb = (b.getAttribute('aria-label') || '').toLowerCase();
+      if (lb.indexOf('perluas') > -1 || lb.indexOf('expand') > -1 ||
+          lb.indexOf('ciutkan') > -1 || lb.indexOf('collapse') > -1 ||
+          lb.indexOf('gambar') > -1 || lb.indexOf('cover') > -1 ||
+          lb.indexOf('tutup') > -1 || lb.indexOf('close') > -1) {
+        continue;
       }
+      if (lb.indexOf('suka') > -1 || lb.indexOf('like') > -1 || lb.indexOf('save') > -1 ||
+          lb.indexOf('simpan') > -1 || lb.indexOf('koleksi') > -1 || lb.indexOf('library') > -1 ||
+          lb.indexOf('tambahkan') > -1 || lb.indexOf('add to') > -1 || lb.indexOf('playlist') > -1 ||
+          lb.indexOf('hapus') > -1 || lb.indexOf('remove') > -1 || lb.indexOf('ubah') > -1 || lb.indexOf('edit') > -1) {
+        return b;
+      }
+      if (!fallback && !b.closest('a')) fallback = b;
     }
-    return null;
+    return fallback;
+  }
+
+  function isGreenColor(col) {
+    if (!col) return false;
+    var m = col.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    if (!m) return false;
+    var r = Number(m[1]), g = Number(m[2]), b = Number(m[3]);
+    return g >= 145 && r <= 90 && b <= 125;
   }
 
   function isLiked(btn) {
     if (!btn) return false;
-    if (btn.getAttribute('aria-checked') === 'true') return true;
+    if (btn.getAttribute('aria-checked') === 'true' ||
+        btn.getAttribute('aria-pressed') === 'true' ||
+        btn.getAttribute('data-active') === 'true') {
+      return true;
+    }
     var lb = (btn.getAttribute('aria-label') || '').toLowerCase();
-    return lb.indexOf('hapus') > -1 || lb.indexOf('remove') > -1 || lb.indexOf('edit') > -1;
+    if (lb.indexOf('hapus') > -1 || lb.indexOf('remove') > -1 ||
+        lb.indexOf('edit') > -1 || lb.indexOf('ubah') > -1 ||
+        lb.indexOf('kelola') > -1 || lb.indexOf('manage') > -1 ||
+        lb.indexOf('tambahkan ke playlist') > -1 || lb.indexOf('add to playlist') > -1) {
+      return true;
+    }
+    try {
+      if (isGreenColor(getComputedStyle(btn).color)) return true;
+      var svg = btn.querySelector('svg');
+      if (svg && (isGreenColor(getComputedStyle(svg).fill) || isGreenColor(getComputedStyle(svg).color))) {
+        return true;
+      }
+    } catch (e) {}
+    return false;
   }
 
   function upgradeArt(src) {
@@ -336,12 +374,17 @@
     return p === '/' || p === '/home' || /^\/intl-[a-z0-9-]+$/i.test(p);
   }
 
+  function isSearchPath(p) {
+    p = p || location.pathname || '';
+    return p.indexOf('/search') === 0 || p.indexOf('/browse') === 0 || /\/(search|browse)(\/|$)/i.test(p);
+  }
+
   function updateNavHighlight() {
     if (!navHome) return;
     var isLib = html.classList.contains('sm-lib');
     var isQueue = html.classList.contains('sm-queue');
     var isNP = html.classList.contains('sm-np');
-    var isSearch = html.classList.contains('sm-search') || location.pathname.indexOf('/search') === 0;
+    var isSearch = html.classList.contains('sm-search') || isSearchPath();
     var onHome = isHomePath();
     html.classList.toggle('sm-home', Boolean(cfg.enabled && onHome && !isLib && !isQueue && !isSearch && !isNP));
     navHome.classList.toggle('act', !isLib && !isSearch);
@@ -403,19 +446,19 @@
   }
 
   function closeOverlays() {
-    html.classList.remove('sm-search', 'sm-lib', 'sm-queue', 'sm-np');
+    html.classList.remove('sm-search', 'sm-lib', 'sm-queue', 'sm-qload', 'sm-qfull', 'sm-qsplit', 'sm-np');
     var inp = q('search-input');
     if (inp) inp.blur();
     updateNavHighlight();
   }
 
   function openSearch() {
-    html.classList.remove('sm-lib', 'sm-queue', 'sm-np');
+    html.classList.remove('sm-lib', 'sm-queue', 'sm-qload', 'sm-qfull', 'sm-qsplit', 'sm-np');
     html.classList.add('sm-search');
     bindSearchInput();
     syncSearchGo();
     updateNavHighlight();
-    if (location.pathname.indexOf('/search') !== 0) {
+    if (!isSearchPath()) {
       press('browse-button');
     }
     // Jangan buka keyboard otomatis saat baru masuk tab Cari
@@ -617,6 +660,7 @@
     }
     if (panel && panel !== mv && (!mv || !panel.contains(mv))) {
       panel.classList.add('sm-qpanel');
+      if (!mv || !mv.contains(panel)) html.classList.add('sm-qsplit');
       return true;
     }
     return false;
@@ -800,7 +844,7 @@
   function closeQueue() {
     qHarvestSeq++;
     var wasOpen = html.classList.contains('sm-queue');
-    html.classList.remove('sm-queue', 'sm-qload', 'sm-qfull');
+    html.classList.remove('sm-queue', 'sm-qload', 'sm-qfull', 'sm-qsplit');
     var tagged = document.querySelectorAll('.sm-qpanel');
     for (var i = 0; i < tagged.length; i++) tagged[i].classList.remove('sm-qpanel');
     if (wasOpen && location.pathname.indexOf('/queue') === 0 && window.history.length > 1) {
@@ -818,7 +862,7 @@
     var seq = ++qHarvestSeq;
     panelMode = 'queue';
     var qb = findQueueButton();
-    html.classList.remove('sm-np', 'sm-lib', 'sm-search', 'sm-qfull');
+    html.classList.remove('sm-np', 'sm-lib', 'sm-search', 'sm-qfull', 'sm-qsplit');
     html.classList.add('sm-queue', 'sm-qload');
     updateNavHighlight();
 
@@ -857,7 +901,7 @@
       if (html.classList.contains('sm-lib') && lastPath !== prev) {
         html.classList.remove('sm-lib');
       }
-      if (html.classList.contains('sm-search') && lastPath.indexOf('/search') !== 0) {
+      if (html.classList.contains('sm-search') && !isSearchPath(lastPath)) {
         html.classList.remove('sm-search');
       }
     }
@@ -866,7 +910,7 @@
     syncProfile();
 
     // Tampilkan tombol back mengambang di sub-halaman
-    var subPage = !isHomePath() && location.pathname.indexOf('/search') !== 0;
+    var subPage = !isHomePath() && !isSearchPath();
     btnPBack.classList.toggle('show', subPage);
 
     fixFilterBar(document.getElementById('main-view'));
@@ -1201,8 +1245,13 @@
     function toggleLike(ev) {
       if (ev) ev.stopPropagation();
       var lb = findLikeButton();
-      if (lb) lb.click();
-      else showToast('Putar lagu dulu untuk menyukai');
+      if (lb) {
+        lb.click();
+        setTimeout(tick, 180);
+        setTimeout(tick, 450);
+      } else {
+        showToast('Putar lagu dulu untuk menyukai');
+      }
     }
     mLike.addEventListener('click', toggleLike);
     npLike.addEventListener('click', toggleLike);
@@ -1316,7 +1365,7 @@
       if (qb && isQueueBtnActive(qb)) qb.click();
       var npvb = findNPVButton();
       if (npvb && isQueueBtnActive(npvb)) npvb.click();
-      html.classList.remove('sm-np', 'sm-lib', 'sm-queue', 'sm-qload', 'sm-qfull', 'sm-search');
+      html.classList.remove('sm-np', 'sm-lib', 'sm-queue', 'sm-qload', 'sm-qfull', 'sm-qsplit', 'sm-search');
       var tagged = document.querySelectorAll('.sm-qpanel');
       for (var i = 0; i < tagged.length; i++) tagged[i].classList.remove('sm-qpanel');
       lb.click();
