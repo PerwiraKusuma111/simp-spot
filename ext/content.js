@@ -25,8 +25,10 @@
     var userMul = Math.max(0.75, Math.min(1.6, (Number(cfg.scale) || 100) / 100));
     var baseMz = k > 1.15 ? Math.max(1.2, Math.min(2.3, k * 0.85)) : 1;
     var mz = Math.max(0.75, Math.min(2.8, baseMz * userMul));
+    var splitZ = Math.max(0.42, Math.min(2.2, (iw * 0.5) / 296));
     html.style.setProperty('--sm-k', k.toFixed(3));
     html.style.setProperty('--sm-mz', mz.toFixed(3));
+    html.style.setProperty('--sm-split-z', splitZ.toFixed(3));
   }
 
   function applyConfig() {
@@ -132,7 +134,7 @@
     vol: 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z',
     lyrics: 'M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z',
     queue: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',
-    info: 'M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z'
+    refresh: 'M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z'
   };
 
   function parseSec(node) {
@@ -280,7 +282,7 @@
   }
 
   // ===== UI STATE & REFS =====
-  var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, btnPBack, qHdr, tabQueue, tabInfo, qCls;
+  var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, btnPBack, qHdr, qBg, qSide, qRef, qCls;
   var miniEl, mArt, mTitle, mArtist, mLike, mPP, mPFill;
   var navHome, navSearch, navLib;
   var npEl, npDown, npRaw, npCtx, npArt, npTitle, npArtist, npLike;
@@ -620,9 +622,185 @@
     return false;
   }
 
+  var qHarvestSeq = 0;
+
+  function parseQueueRow(row, idx) {
+    var img = row.querySelector('img');
+    var src = img ? (img.src || '') : '';
+    var titleEl = row.querySelector('[data-testid="internal-track-link"], a[href*="/track/"]');
+    var title = titleEl ? (titleEl.textContent || '').trim() : '';
+    var artistLinks = row.querySelectorAll('a[href*="/artist/"]');
+    var artists = [];
+    for (var i = 0; i < artistLinks.length; i++) {
+      var at = (artistLinks[i].textContent || '').trim();
+      if (at && artists.indexOf(at) === -1) artists.push(at);
+    }
+    var artist = artists.join(', ');
+    if (!title) {
+      var txts = [];
+      var nodes = row.querySelectorAll('[dir="auto"], span, a');
+      for (var j = 0; j < nodes.length; j++) {
+        if (nodes[j].children && nodes[j].children.length > 0) continue;
+        var s = (nodes[j].textContent || '').trim();
+        if (!s || s === 'E' || /^\d+:\d+$/.test(s) || /^\d+$/.test(s)) continue;
+        if (txts.indexOf(s) === -1) txts.push(s);
+      }
+      if (txts[0]) title = txts[0];
+      if (!artist && txts[1]) artist = txts[1];
+    }
+    if (!title) return null;
+    return { idx: idx, title: title, artist: artist, src: src };
+  }
+
+  function captureQueueFromDOM() {
+    var rootQ = q('queue-page') ||
+      document.querySelector('aside[aria-label*="Antrean"], aside[aria-label*="Queue"]') ||
+      document.getElementById('Desktop_PanelContainer_Id');
+    if (!rootQ) return [];
+    var rows = rootQ.querySelectorAll('[data-testid="tracklist-row"]');
+    if (!rows.length) rows = rootQ.querySelectorAll('[role="row"]');
+    var out = [];
+    for (var i = 0; i < rows.length && out.length < 30; i++) {
+      var item = parseQueueRow(rows[i], i);
+      if (item) out.push(item);
+    }
+    return out;
+  }
+
+  function renderQueueList(items) {
+    if (!qSide) return;
+    while (qSide.firstChild) qSide.removeChild(qSide.firstChild);
+    if (!items || !items.length) {
+      if (lastTitle && lastTitle !== 'Belum ada lagu diputar') {
+        qSide.appendChild(el('div', '', 'sm-qsec', 'Sekarang memutar'));
+        qSide.appendChild(buildQueueRowEl({ idx: 0, title: lastTitle, artist: lastArtist, src: lastArtRaw }, true));
+      }
+      qSide.appendChild(el('div', '', 'sm-qempty', 'Belum ada daftar antrean berikutnya'));
+      return;
+    }
+
+    qSide.appendChild(el('div', '', 'sm-qsec', 'Sekarang memutar'));
+    qSide.appendChild(buildQueueRowEl(items[0], true));
+
+    if (items.length > 1) {
+      qSide.appendChild(el('div', '', 'sm-qsec nxt', 'Berikutnya'));
+      for (var i = 1; i < items.length; i++) {
+        qSide.appendChild(buildQueueRowEl(items[i], false));
+      }
+    }
+  }
+
+  function buildQueueRowEl(item, isNow) {
+    var btn = el('button', '', isNow ? 'sm-qrow now' : 'sm-qrow');
+    var im = el('img', '', 'sm-qimg');
+    im.alt = '';
+    if (item.src) im.src = item.src;
+    var tx = el('div', '', 'sm-qtx');
+    tx.append(
+      el('div', '', 'sm-qt', item.title),
+      el('div', '', 'sm-qa', item.artist || '')
+    );
+    btn.append(im, tx);
+    if (!isNow) {
+      btn.addEventListener('click', function () {
+        playQueuedTrack(item);
+      });
+    }
+    return btn;
+  }
+
+  function activateNPVPanel() {
+    panelMode = 'info';
+    var npvb = findNPVButton();
+    var qb = findQueueButton();
+    if (npvb) {
+      if (qb && isQueueBtnActive(qb) && isQueueBtnActive(npvb)) {
+        qb.click();
+      } else if (!isQueueBtnActive(npvb)) {
+        npvb.click();
+      }
+    } else if (qb) {
+      var xBtn = document.querySelector('[data-testid="queue-page"] button[aria-label="Tutup"], [data-testid="queue-page"] button[aria-label="Close"]');
+      if (xBtn) xBtn.click();
+    }
+    setTimeout(function () {
+      if (!html.classList.contains('sm-queue')) return;
+      revealQueuePanel();
+      html.classList.remove('sm-qload');
+    }, 180);
+    setTimeout(function () {
+      if (!html.classList.contains('sm-queue')) return;
+      revealQueuePanel();
+      html.classList.remove('sm-qload');
+    }, 450);
+  }
+
+  function harvestAndShowSplit(seq) {
+    var tries = 0;
+    function poll() {
+      if (seq !== qHarvestSeq || !html.classList.contains('sm-queue')) return;
+      revealQueuePanel();
+      var items = captureQueueFromDOM();
+      if (items.length > 0 || tries >= 8) {
+        renderQueueList(items);
+        var hasNPV = Boolean(findNPVButton() || q('NPV_Panel_OpenDiv'));
+        if (hasNPV) {
+          html.classList.remove('sm-qfull');
+          activateNPVPanel();
+        } else {
+          // Fallback: jika tombol Info/NPV tidak ada, tetap tampilkan Antrean penuh
+          html.classList.remove('sm-qload');
+          html.classList.add('sm-qfull');
+        }
+        return;
+      }
+      tries++;
+      setTimeout(poll, 90);
+    }
+    setTimeout(poll, 100);
+  }
+
+  function playQueuedTrack(item) {
+    var seq = ++qHarvestSeq;
+    panelMode = 'queue';
+    html.classList.add('sm-qload');
+    var qb = findQueueButton();
+    if (qb && !isQueueBtnActive(qb)) qb.click();
+
+    var tries = 0;
+    function findAndPlay() {
+      if (seq !== qHarvestSeq || !html.classList.contains('sm-queue')) return;
+      revealQueuePanel();
+      var rootQ = q('queue-page') || document.getElementById('Desktop_PanelContainer_Id');
+      var rows = rootQ ? rootQ.querySelectorAll('[data-testid="tracklist-row"], [role="row"]') : [];
+      var hit = null;
+      for (var i = 0; i < rows.length; i++) {
+        var parsed = parseQueueRow(rows[i], i);
+        if (parsed && parsed.title === item.title) { hit = rows[i]; break; }
+      }
+      if (!hit && rows[item.idx]) hit = rows[item.idx];
+
+      if (hit) {
+        var playBtn = hit.querySelector('button[aria-label*="Putar"], button[aria-label*="Play"], [data-testid="play-button"]');
+        if (playBtn) playBtn.click();
+        else hit.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+        setTimeout(function () { harvestAndShowSplit(seq); }, 320);
+        return;
+      }
+      if (tries < 6) {
+        tries++;
+        setTimeout(findAndPlay, 90);
+      } else {
+        activateNPVPanel();
+      }
+    }
+    setTimeout(findAndPlay, 110);
+  }
+
   function closeQueue() {
+    qHarvestSeq++;
     var wasOpen = html.classList.contains('sm-queue');
-    html.classList.remove('sm-queue');
+    html.classList.remove('sm-queue', 'sm-qload', 'sm-qfull');
     var tagged = document.querySelectorAll('.sm-qpanel');
     for (var i = 0; i < tagged.length; i++) tagged[i].classList.remove('sm-qpanel');
     if (wasOpen && location.pathname.indexOf('/queue') === 0 && window.history.length > 1) {
@@ -636,66 +814,24 @@
     updateNavHighlight();
   }
 
-  function syncPanelTabs() {
-    if (tabQueue) tabQueue.classList.toggle('act', panelMode === 'queue');
-    if (tabInfo) tabInfo.classList.toggle('act', panelMode === 'info');
-  }
-
   function openQueue() {
+    var seq = ++qHarvestSeq;
     panelMode = 'queue';
     var qb = findQueueButton();
-    syncPanelTabs();
-    html.classList.remove('sm-np', 'sm-lib', 'sm-search');
-    html.classList.add('sm-queue');
+    html.classList.remove('sm-np', 'sm-lib', 'sm-search', 'sm-qfull');
+    html.classList.add('sm-queue', 'sm-qload');
     updateNavHighlight();
 
-    // Klik tombol antrean bawaan Spotify jika antrean belum aktif
-    var already = Boolean(q('queue-page') || location.pathname.indexOf('/queue') === 0);
-    if (!already && qb) qb.click();
-
-    revealQueuePanel();
-    setTimeout(revealQueuePanel, 120);
-    setTimeout(revealQueuePanel, 350);
-    setTimeout(function () {
-      if (!html.classList.contains('sm-queue') || panelMode !== 'queue') return;
-      if (revealQueuePanel()) return;
-      try {
-        if (location.pathname.indexOf('/queue') !== 0) {
-          window.history.pushState({}, '', '/queue');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }
-      } catch (e) {}
-    }, 650);
-  }
-
-  function openInfo() {
-    panelMode = 'info';
-    var npvb = findNPVButton();
-    var qb = findQueueButton();
-    if (!npvb && !qb) {
-      showToast('Info lagu & Canvas belum tersedia');
-      return;
+    if (qSide) {
+      while (qSide.firstChild) qSide.removeChild(qSide.firstChild);
+      qSide.appendChild(el('div', '', 'sm-qempty', 'Memuat antrean...'));
     }
-    syncPanelTabs();
-    html.classList.remove('sm-np', 'sm-lib', 'sm-search');
-    html.classList.add('sm-queue');
-    updateNavHighlight();
-    if (npvb) {
-      if (qb && isQueueBtnActive(qb) && isQueueBtnActive(npvb)) {
-        qb.click();
-      } else if (!isQueueBtnActive(npvb)) {
-        npvb.click();
-      }
-    } else if (qb) {
-      if (!isQueueBtnActive(qb)) qb.click();
-      setTimeout(function () {
-        var xBtn = document.querySelector('[data-testid="queue-page"] button[aria-label="Tutup"], [data-testid="queue-page"] button[aria-label="Close"]');
-        if (xBtn) xBtn.click();
-      }, 220);
-    }
-    revealQueuePanel();
-    setTimeout(revealQueuePanel, 150);
-    setTimeout(revealQueuePanel, 400);
+
+    var already = Boolean(q('queue-page'));
+    if (!already && qb && !isQueueBtnActive(qb)) qb.click();
+    else if (!already && qb) qb.click();
+
+    harvestAndShowSplit(seq);
   }
 
   function tick() {
@@ -859,16 +995,25 @@
     btnPBack.setAttribute('aria-label', 'Kembali');
     btnPBack.appendChild(svgIcon(IC.back, 20));
 
-    // Queue / Info combined top header (2 tabs + 1 close button)
+    // Split View Header (Kiri: Info Lagu | Kanan: Antrean + Refresh + X tunggal)
     qHdr = el('div', 'sm-qhdr');
-    var qTabs = el('div', 'sm-qtabs');
-    tabQueue = el('button', 'sm-qtab-q', 'sm-qtab act', 'Antrean');
-    tabInfo = el('button', 'sm-qtab-i', 'sm-qtab', 'Info Lagu');
-    qTabs.append(tabQueue, tabInfo);
+    var qhl = el('div', 'sm-qhl');
+    qhl.appendChild(el('span', '', '', 'Info Lagu'));
+    var qhr = el('div', 'sm-qhr');
+    qhr.appendChild(el('span', '', '', 'Antrean'));
+    var qActs = el('div', 'sm-qacts');
+    qRef = el('button', 'sm-qref');
+    qRef.setAttribute('aria-label', 'Segarkan Antrean');
+    qRef.appendChild(svgIcon(IC.refresh, 16));
     qCls = el('button', 'sm-qcls');
     qCls.setAttribute('aria-label', 'Tutup');
-    qCls.appendChild(svgIcon(IC.close, 19));
-    qHdr.append(qTabs, qCls);
+    qCls.appendChild(svgIcon(IC.close, 17));
+    qActs.append(qRef, qCls);
+    qhr.appendChild(qActs);
+    qHdr.append(qhl, qhr);
+
+    qBg = el('div', 'sm-qbg', '', 'Memuat info lagu...');
+    qSide = el('div', 'sm-qside');
 
     // ===== FLOATING MINI PLAYER =====
     miniEl = el('div', 'sm-mini');
@@ -1015,7 +1160,7 @@
     // Toast
     toastEl = el('div', 'sm-toast');
 
-    root.append(homeHdr, btnSBack, btnSGo, btnPBack, qHdr, miniEl, nav, npEl, toastEl);
+    root.append(homeHdr, btnSBack, btnSGo, btnPBack, qHdr, qBg, qSide, miniEl, nav, npEl, toastEl);
     document.body.append(root, btnBackMob);
 
     // ===== EVENTS =====
@@ -1171,7 +1316,7 @@
       if (qb && isQueueBtnActive(qb)) qb.click();
       var npvb = findNPVButton();
       if (npvb && isQueueBtnActive(npvb)) npvb.click();
-      html.classList.remove('sm-np', 'sm-lib', 'sm-queue', 'sm-search');
+      html.classList.remove('sm-np', 'sm-lib', 'sm-queue', 'sm-qload', 'sm-qfull', 'sm-search');
       var tagged = document.querySelectorAll('.sm-qpanel');
       for (var i = 0; i < tagged.length; i++) tagged[i].classList.remove('sm-qpanel');
       lb.click();
@@ -1179,8 +1324,7 @@
     });
 
     btnQueue.addEventListener('click', openQueue);
-    tabQueue.addEventListener('click', openQueue);
-    tabInfo.addEventListener('click', openInfo);
+    qRef.addEventListener('click', openQueue);
     qCls.addEventListener('click', closeQueue);
 
     // Bottom Navigation

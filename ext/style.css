@@ -1,6 +1,7 @@
 :root {
   --sm-k: 1;
   --sm-mz: 1;
+  --sm-split-z: 0.66;
 }
 
 html.sm,
@@ -75,7 +76,7 @@ html.sm.sm-lib #Desktop_LeftSidebar_Id > * {
   min-width: 0 !important;
 }
 
-/* Sembunyikan panel kanan kecuali saat mode Antrean aktif */
+/* Sembunyikan panel kanan kecuali saat mode Split Info+Antrean aktif */
 html.sm:not(.sm-queue) #Desktop_PanelContainer_Id,
 html.sm:not(.sm-queue) .Root__right-sidebar,
 html.sm:not(.sm-queue) #main-view ~ aside,
@@ -84,24 +85,18 @@ html.sm:not(.sm-queue) #main-view ~ div:has([data-testid="lyrics-npv-section"], 
   display: none !important;
 }
 
-/* Mode Antrean / Info Lagu: gunakan layout yang terbukti jalan tanpa merusak OverlayScrollbars internal Spotify */
-html.sm.sm-queue .Root__top-container,
-html.sm.sm-queue .sm-qpanel {
-  --panel-width: 100vw !important;
-  --right-sidebar-width: 100vw !important;
-}
-
+/* Mode Gabungan (Kiri 50%: Info Lagu live di-scale pas agar tidak terpotong, Kanan 50%: daftar Antrean) */
 html.sm.sm-queue .sm-qpanel {
   display: flex !important;
   flex-direction: column !important;
   position: fixed !important;
   top: calc(52px * var(--sm-k)) !important;
   left: 0 !important;
-  right: 0 !important;
+  right: 50% !important;
   bottom: calc(120px * var(--sm-k)) !important;
-  width: 100% !important;
-  min-width: 100% !important;
-  max-width: 100% !important;
+  width: 50% !important;
+  min-width: 50% !important;
+  max-width: 50% !important;
   height: calc(100vh - 172px * var(--sm-k)) !important;
   z-index: 2147482988 !important;
   background: #121212 !important;
@@ -111,17 +106,37 @@ html.sm.sm-queue .sm-qpanel {
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
-  --content-spacing: 16px !important;
+  --content-spacing: 12px !important;
+  --panel-width: 296px !important;
+  --right-sidebar-width: 296px !important;
+}
+
+/* Saat sedang mengambil data antrean sebentar di latar belakang */
+html.sm.sm-queue.sm-qload .sm-qpanel {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Fallback full-width jika Info Lagu tidak tersedia */
+html.sm.sm-queue.sm-qfull .sm-qpanel {
+  right: 0 !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
 }
 
 html.sm.sm-queue .sm-qpanel > * {
-  zoom: var(--sm-mz) !important;
+  zoom: var(--sm-split-z) !important;
   flex: 1 1 100% !important;
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
   height: 100% !important;
   min-height: 100% !important;
+}
+
+html.sm.sm-queue.sm-qfull .sm-qpanel > * {
+  zoom: var(--sm-mz) !important;
 }
 
 html.sm.sm-queue .sm-qpanel aside,
@@ -136,7 +151,7 @@ html.sm.sm-queue .sm-qpanel [data-testid="queue-page"] {
   opacity: 1 !important;
 }
 
-/* Sembunyikan tombol X duplikat bawaan Spotify di dalam header Antrean */
+/* Sembunyikan tombol X duplikat bawaan Spotify di dalam panel */
 html.sm.sm-queue [data-testid="queue-page"] button[aria-label="Tutup"],
 html.sm.sm-queue [data-testid="queue-page"] button[aria-label="Close"] {
   display: none !important;
@@ -486,7 +501,7 @@ html.sm:not(.sm-search):not(.sm-lib):not(.sm-queue):not(.sm-np) #sm-pback.show {
   display: inline-flex;
 }
 
-/* Header overlay Antrean & Info Lagu (gabungan 2 tab + 1 tombol X) */
+/* Header Split View (Kiri: Info Lagu | Kanan: Antrean + tombol X tunggal) */
 #sm-qhdr {
   display: none;
   position: fixed;
@@ -497,10 +512,7 @@ html.sm:not(.sm-search):not(.sm-lib):not(.sm-queue):not(.sm-np) #sm-pback.show {
   background: #121212;
   border-bottom: 1px solid #242424;
   z-index: 2147482996;
-  padding: 0 calc(12px * var(--sm-k));
   align-items: center;
-  justify-content: space-between;
-  gap: calc(10px * var(--sm-k));
   color: #fff;
 }
 
@@ -508,35 +520,34 @@ html.sm.sm-queue #sm-qhdr {
   display: flex;
 }
 
-#sm-qtabs {
-  display: flex;
-  align-items: center;
-  gap: calc(8px * var(--sm-k));
+#sm-qhl,
+#sm-qhr {
   flex: 1;
   min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 calc(10px * var(--sm-k));
+  font-size: calc(14px * var(--sm-k));
+  font-weight: 800;
 }
 
-.sm-qtab {
-  border: 0;
-  border-radius: 999px;
-  background: #242424;
-  color: #b3b3b3;
-  height: calc(32px * var(--sm-k));
-  padding: 0 calc(14px * var(--sm-k));
-  font-size: calc(13px * var(--sm-k));
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
+#sm-qhr {
+  border-left: 1px solid #242424;
 }
 
-.sm-qtab.act {
-  background: #fff;
-  color: #000;
+#sm-qacts {
+  display: flex;
+  align-items: center;
+  gap: calc(6px * var(--sm-k));
+  flex: none;
 }
 
+#sm-qref,
 #sm-qcls {
-  width: calc(34px * var(--sm-k));
-  height: calc(34px * var(--sm-k));
+  width: calc(30px * var(--sm-k));
+  height: calc(30px * var(--sm-k));
   border: 0;
   border-radius: 50%;
   background: #282828;
@@ -547,6 +558,126 @@ html.sm.sm-queue #sm-qhdr {
   cursor: pointer;
   padding: 0;
   flex: none;
+}
+
+/* Panel Kanan 50%: Daftar Antrean (bisa di-scroll & klik lagu) */
+#sm-qside {
+  display: none;
+  position: fixed;
+  top: calc(52px * var(--sm-k));
+  left: 50%;
+  right: 0;
+  bottom: calc(120px * var(--sm-k));
+  background: #121212;
+  border-left: 1px solid #242424;
+  z-index: 2147482990;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: calc(10px * var(--sm-k)) calc(8px * var(--sm-k)) calc(18px * var(--sm-k));
+  color: #fff;
+}
+
+html.sm.sm-queue:not(.sm-qfull) #sm-qside {
+  display: block;
+}
+
+/* Latar belakang solid di sisi kiri saat Info Lagu sedang memuat */
+#sm-qbg {
+  display: none;
+  position: fixed;
+  top: calc(52px * var(--sm-k));
+  left: 0;
+  right: 50%;
+  bottom: calc(120px * var(--sm-k));
+  background: #121212;
+  z-index: 2147482986;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: calc(12px * var(--sm-k));
+}
+
+html.sm.sm-queue:not(.sm-qfull) #sm-qbg {
+  display: flex;
+}
+
+.sm-qsec {
+  font-size: calc(11px * var(--sm-k));
+  font-weight: 800;
+  color: #b3b3b3;
+  letter-spacing: 0.02em;
+  margin: calc(4px * var(--sm-k)) calc(4px * var(--sm-k)) calc(8px * var(--sm-k));
+}
+
+.sm-qsec.nxt {
+  margin-top: calc(14px * var(--sm-k));
+}
+
+.sm-qrow {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--sm-k));
+  padding: calc(6px * var(--sm-k)) calc(4px * var(--sm-k));
+  border-radius: calc(6px * var(--sm-k));
+  text-align: left;
+  cursor: pointer;
+}
+
+.sm-qrow:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sm-qimg {
+  width: calc(34px * var(--sm-k));
+  height: calc(34px * var(--sm-k));
+  border-radius: calc(4px * var(--sm-k));
+  object-fit: cover;
+  background: #282828;
+  flex: none;
+}
+
+.sm-qtx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(2px * var(--sm-k));
+}
+
+.sm-qt {
+  font-size: calc(11.5px * var(--sm-k));
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sm-qrow.now .sm-qt {
+  color: #1db954;
+}
+
+.sm-qa {
+  font-size: calc(10.5px * var(--sm-k));
+  color: #a7a7a7;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sm-qempty {
+  padding: calc(16px * var(--sm-k)) calc(6px * var(--sm-k));
+  font-size: calc(11.5px * var(--sm-k));
+  color: #8c8c8c;
+  text-align: center;
 }
 
 /* ===== FLOATING MINI PLAYER (SPOTIFY MOBILE STYLE) ===== */
