@@ -608,6 +608,14 @@
 
     root = el('div', 'sm-root');
 
+    // Home Top Header (Spotify title + Profile / Masuk)
+    homeHdr = el('header', 'sm-home-hdr');
+    btnBrand = el('button', 'sm-brand', '', 'Spotify');
+    btnBrand.setAttribute('aria-label', 'Beranda Spotify');
+    btnProf = el('button', 'sm-prof', 'login', 'Masuk');
+    btnProf.setAttribute('aria-label', 'Masuk');
+    homeHdr.append(btnBrand, btnProf);
+
     // Search top buttons
     btnSBack = el('button', 'sm-sback');
     btnSBack.setAttribute('aria-label', 'Tutup Cari');
