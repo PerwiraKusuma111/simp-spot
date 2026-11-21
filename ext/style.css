@@ -485,12 +485,12 @@ html.sm.sm-search #sm-sgo.show {
   display: inline-flex;
 }
 
-/* Tombol Back mengambang di sub-halaman (Playlist, Album, Artis, Lirik) */
-#sm-pback {
+/* Tombol Back mengambang di sub-halaman (Playlist, Album, Artis) */
+#sm-pback,
+#sm-lcls {
   display: none;
   position: fixed;
   top: calc(10px * var(--sm-k));
-  left: calc(10px * var(--sm-k));
   width: calc(36px * var(--sm-k));
   height: calc(36px * var(--sm-k));
   border: 0;
@@ -504,8 +504,28 @@ html.sm.sm-search #sm-sgo.show {
   padding: 0;
 }
 
-html.sm:not(.sm-search):not(.sm-lib):not(.sm-queue):not(.sm-np) #sm-pback.show {
+#sm-pback {
+  left: calc(10px * var(--sm-k));
+}
+
+#sm-lcls {
+  right: calc(12px * var(--sm-k));
+}
+
+html.sm:not(.sm-search):not(.sm-lib):not(.sm-queue):not(.sm-np):not(.sm-lyrics) #sm-pback.show {
   display: inline-flex;
+}
+
+html.sm.sm-lyrics:not(.sm-search):not(.sm-lib):not(.sm-queue):not(.sm-np) #sm-lcls {
+  display: inline-flex;
+}
+
+/* Sembunyikan popover pilih playlist bawaan Spotify saat proses unlike otomatis 1-klik */
+html.sm.sm-unliking [data-tippy-root],
+html.sm.sm-unliking #context-menu,
+html.sm.sm-unliking [role="dialog"] {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* Header Split View (Kiri: Info Lagu | Kanan: Antrean + tombol X tunggal) */

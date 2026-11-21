@@ -320,7 +320,7 @@
   }
 
   // ===== UI STATE & REFS =====
-  var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, btnPBack, qHdr, qBg, qSide, qRef, qCls;
+  var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, btnPBack, btnLCls, qHdr, qBg, qSide, qRef, qCls;
   var miniEl, mArt, mTitle, mArtist, mLike, mPP, mPFill;
   var navHome, navSearch, navLib;
   var npEl, npDown, npRaw, npCtx, npArt, npTitle, npArtist, npLike;
@@ -379,6 +379,11 @@
     return p.indexOf('/search') === 0 || p.indexOf('/browse') === 0 || /\/(search|browse)(\/|$)/i.test(p);
   }
 
+  function isLyricsPath(p) {
+    p = p || location.pathname || '';
+    return p.indexOf('/lyrics') === 0 || /\/lyrics(\/|$)/i.test(p);
+  }
+
   function updateNavHighlight() {
     if (!navHome) return;
     var isLib = html.classList.contains('sm-lib');
@@ -386,7 +391,9 @@
     var isNP = html.classList.contains('sm-np');
     var isSearch = html.classList.contains('sm-search') || isSearchPath();
     var onHome = isHomePath();
+    var onLyrics = isLyricsPath();
     html.classList.toggle('sm-home', Boolean(cfg.enabled && onHome && !isLib && !isQueue && !isSearch && !isNP));
+    html.classList.toggle('sm-lyrics', Boolean(cfg.enabled && onLyrics && !isLib && !isQueue && !isSearch && !isNP));
     navHome.classList.toggle('act', !isLib && !isSearch);
     navSearch.classList.toggle('act', !isLib && isSearch);
     navLib.classList.toggle('act', isLib);
@@ -858,10 +865,23 @@
     updateNavHighlight();
   }
 
+  function closeLyrics() {
+    var lb = q('lyrics-button');
+    if (lb && (lb.getAttribute('data-active') === 'true' || lb.getAttribute('aria-pressed') === 'true')) {
+      lb.click();
+    } else if (isLyricsPath()) {
+      if (window.history.length > 1) window.history.back();
+      else press('home-button');
+    }
+    setTimeout(updateNavHighlight, 80);
+  }
+
   function openQueue() {
     var seq = ++qHarvestSeq;
     panelMode = 'queue';
-    var qb = findQueueButton();
+    var wasLyrics = isLyricsPath();
+    if (wasLyrics) closeLyrics();
+
     html.classList.remove('sm-np', 'sm-lib', 'sm-search', 'sm-qfull', 'sm-qsplit');
     html.classList.add('sm-queue', 'sm-qload');
     updateNavHighlight();
@@ -871,11 +891,17 @@
       qSide.appendChild(el('div', '', 'sm-qempty', 'Memuat antrean...'));
     }
 
-    var already = Boolean(q('queue-page'));
-    if (!already && qb && !isQueueBtnActive(qb)) qb.click();
-    else if (!already && qb) qb.click();
+    function launch() {
+      if (seq !== qHarvestSeq || !html.classList.contains('sm-queue')) return;
+      var qb = findQueueButton();
+      var already = Boolean(q('queue-page'));
+      if (!already && qb && !isQueueBtnActive(qb)) qb.click();
+      else if (!already && qb) qb.click();
+      harvestAndShowSplit(seq);
+    }
 
-    harvestAndShowSplit(seq);
+    if (wasLyrics) setTimeout(launch, 160);
+    else launch();
   }
 
   function tick() {
@@ -1034,10 +1060,14 @@
     btnSGo.setAttribute('aria-label', 'Cari');
     btnSGo.appendChild(svgIcon(IC.search, 19));
 
-    // Sub-page floating back button
+    // Sub-page floating back button & Lyrics top-right X close button
     btnPBack = el('button', 'sm-pback');
     btnPBack.setAttribute('aria-label', 'Kembali');
     btnPBack.appendChild(svgIcon(IC.back, 20));
+
+    btnLCls = el('button', 'sm-lcls');
+    btnLCls.setAttribute('aria-label', 'Tutup Lirik');
+    btnLCls.appendChild(svgIcon(IC.close, 19));
 
     // Split View Header (Kiri: Info Lagu | Kanan: Antrean + Refresh + X tunggal)
     qHdr = el('div', 'sm-qhdr');
@@ -1204,7 +1234,7 @@
     // Toast
     toastEl = el('div', 'sm-toast');
 
-    root.append(homeHdr, btnSBack, btnSGo, btnPBack, qHdr, qBg, qSide, miniEl, nav, npEl, toastEl);
+    root.append(homeHdr, btnSBack, btnSGo, btnPBack, btnLCls, qHdr, qBg, qSide, miniEl, nav, npEl, toastEl);
     document.body.append(root, btnBackMob);
 
     // ===== EVENTS =====
@@ -1242,19 +1272,77 @@
       press('control-button-playpause');
     });
 
+    function autoUnlikeFromPopover() {
+      var tries = 0;
+      function step() {
+        var popovers = document.querySelectorAll('[data-tippy-root], #context-menu, [role="dialog"]');
+        for (var i = 0; i < popovers.length; i++) {
+          var pop = popovers[i];
+          var low = (pop.textContent || '').toLowerCase();
+          if (low.indexOf('lagu yang disukai') === -1 && low.indexOf('liked songs') === -1) continue;
+
+          // Cari baris / checkbox "Lagu yang Disukai" atau "Liked Songs" lalu klik untuk hapus centang
+          var targetRow = null;
+          var items = pop.querySelectorAll('[role="checkbox"], [aria-checked="true"], input[type="checkbox"], button, [role="option"], li');
+          for (var j = 0; j < items.length; j++) {
+            var it = items[j];
+            var t = (it.textContent || it.getAttribute('aria-label') || '').toLowerCase();
+            if (t.indexOf('lagu yang disukai') > -1 || t.indexOf('liked songs') > -1) {
+              targetRow = it;
+              break;
+            }
+          }
+          if (targetRow) {
+            targetRow.click();
+            setTimeout(function () {
+              // Klik tombol Selesai / Done / Simpan di dalam popover
+              var btns = pop.querySelectorAll('button');
+              for (var k = 0; k < btns.length; k++) {
+                var bt = (btns[k].textContent || '').trim().toLowerCase();
+                if (bt === 'selesai' || bt === 'done' || bt === 'simpan' || bt === 'save') {
+                  btns[k].click();
+                  break;
+                }
+              }
+              setTimeout(function () {
+                html.classList.remove('sm-unliking');
+                tick();
+              }, 180);
+            }, 90);
+            return;
+          }
+        }
+        if (tries < 6) {
+          tries++;
+          setTimeout(step, 60);
+        } else {
+          html.classList.remove('sm-unliking');
+          tick();
+        }
+      }
+      setTimeout(step, 60);
+    }
+
     function toggleLike(ev) {
       if (ev) ev.stopPropagation();
       var lb = findLikeButton();
-      if (lb) {
+      if (!lb) {
+        showToast('Putar lagu dulu untuk menyukai');
+        return;
+      }
+      if (isLiked(lb)) {
+        html.classList.add('sm-unliking');
+        lb.click();
+        autoUnlikeFromPopover();
+      } else {
         lb.click();
         setTimeout(tick, 180);
         setTimeout(tick, 450);
-      } else {
-        showToast('Putar lagu dulu untuk menyukai');
       }
     }
     mLike.addEventListener('click', toggleLike);
     npLike.addEventListener('click', toggleLike);
+    btnLCls.addEventListener('click', closeLyrics);
 
     npDown.addEventListener('click', function () {
       html.classList.remove('sm-np');
