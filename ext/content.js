@@ -337,7 +337,7 @@
   }
 
   // ===== UI STATE & REFS =====
-  var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, btnPBack, btnLCls, qHdr, qBg, qSide, qRef, qCls;
+  var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, sVeil, btnPBack, btnLCls, qHdr, qBg, qSide, qRef, qCls;
   var miniEl, mArt, mTitle, mArtist, mLike, mPP, mPFill;
   var navHome, navSearch, navLib;
   var npEl, npDown, npMore, npCtx, npArt, npTitle, npArtist, npLike;
@@ -356,6 +356,87 @@
   var libExpandTries = 0;
   var lastLibClickAt = 0;
 
+  var BROWSE_CATS = [
+    { name: 'Pop', q: 'Pop', bg: '#148a08' },
+    { name: 'Pop Indonesia', q: 'Pop Indonesia', bg: '#e8115b' },
+    { name: 'Indie', q: 'Indie', bg: '#e91429' },
+    { name: 'R&B', q: 'R&B', bg: '#dc148c' },
+    { name: 'Hip-Hop', q: 'Hip-Hop', bg: '#bc5900' },
+    { name: 'K-Pop', q: 'K-Pop', bg: '#e61e32' },
+    { name: 'Chill', q: 'Chill', bg: '#d84000' },
+    { name: 'Galau', q: 'Lagu Galau', bg: '#503750' },
+    { name: 'Rilis Baru', q: 'Rilis Baru', bg: '#608108' },
+    { name: 'Podcast', q: 'Podcast', bg: '#006450' },
+    { name: 'Fokus', q: 'Fokus', bg: '#1e3264' },
+    { name: 'Akustik', q: 'Akustik', bg: '#8d67ab' },
+    { name: 'Rock', q: 'Rock', bg: '#af2896' },
+    { name: 'Olahraga', q: 'Workout', bg: '#0d73ec' },
+    { name: 'Jazz', q: 'Jazz', bg: '#477d95' },
+    { name: 'Tidur', q: 'Sleep', bg: '#283ea3' }
+  ];
+
+  function triggerCategorySearch(query) {
+    html.classList.remove('sm-lib', 'sm-queue', 'sm-qload', 'sm-qfull', 'sm-qsplit', 'sm-np', 'sm-home');
+    html.classList.add('sm-search');
+    bindSearchInput();
+    var inp = q('search-input');
+    if (inp) {
+      var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+      if (desc && desc.set) desc.set.call(inp, query);
+      else inp.value = query;
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+      inp.dispatchEvent(new Event('change', { bubbles: true }));
+      inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+      var form = inp.closest('form');
+      if (form) form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      setTimeout(function () { if (inp) inp.blur(); syncSearchGo(); }, 80);
+    } else {
+      press('browse-button');
+    }
+    syncSearchGo();
+    updateNavHighlight();
+  }
+
+  function ensureHomeBrowseShelf() {
+    if (!cfg.enabled || !isHomePath()) return;
+    if (document.getElementById('sm-browse-shelf')) return;
+    var hp = q('home-page');
+    if (!hp) return;
+    var firstShelf = hp.querySelector('[data-testid="component-shelf"]') || hp.querySelector('section');
+    if (!firstShelf || !firstShelf.parentElement) return;
+
+    var wrap = el('div', 'sm-browse-shelf');
+    var hdr = el('div', '', 'sm-br-hdr');
+    hdr.appendChild(el('div', '', 'sm-br-title', 'Jelajahi semua'));
+    var allBtn = el('button', '', 'sm-br-all', 'Lihat semua');
+    allBtn.type = 'button';
+    allBtn.addEventListener('click', function () {
+      html.classList.remove('sm-home', 'sm-lib', 'sm-queue', 'sm-np', 'sm-search');
+      press('browse-button');
+      updateNavHighlight();
+    });
+    hdr.appendChild(allBtn);
+
+    var grid = el('div', '', 'sm-br-grid');
+    for (var i = 0; i < BROWSE_CATS.length; i++) {
+      (function (cat) {
+        var card = el('button', '', 'sm-br-card');
+        card.type = 'button';
+        card.style.backgroundColor = cat.bg;
+        card.appendChild(el('span', '', '', cat.name));
+        card.addEventListener('click', function () {
+          triggerCategorySearch(cat.q);
+        });
+        grid.appendChild(card);
+      })(BROWSE_CATS[i]);
+    }
+    wrap.append(hdr, grid);
+
+    try {
+      firstShelf.parentElement.insertBefore(wrap, firstShelf);
+    } catch (e) {}
+  }
+
   function showToast(msg) {
     if (!toastEl) return;
     toastEl.textContent = msg;
@@ -370,19 +451,27 @@
   }
 
   function syncSearchGo() {
-    if (!btnSGo) return;
     var inp = q('search-input');
-    btnSGo.classList.toggle('show', Boolean(inp && (inp.value || '').trim()));
+    var hasTxt = Boolean(inp && (inp.value || '').trim());
+    if (btnSGo) btnSGo.classList.toggle('show', hasTxt);
+    if (sVeil) {
+      // Sembunyikan layar fokus pencarian begitu Spotify sudah masuk ke hasil pencarian (/search/...)
+      var hasResultRoute = isSearchPath() && (hasTxt || /\/(search|browse)\/.+/i.test(location.pathname || ''));
+      sVeil.classList.toggle('hide', hasResultRoute);
+    }
   }
 
   function bindSearchInput() {
     var inp = q('search-input');
     if (!inp || inp._smBound) return;
     inp._smBound = 1;
-    inp.addEventListener('input', syncSearchGo);
+    inp.addEventListener('input', function () {
+      syncSearchGo();
+      setTimeout(syncSearchGo, 120);
+    });
     inp.addEventListener('keydown', function (ev) {
       if (ev.key === 'Enter') {
-        setTimeout(function () { if (inp) inp.blur(); }, 100);
+        setTimeout(function () { if (inp) inp.blur(); syncSearchGo(); }, 100);
       }
     });
   }
@@ -571,10 +660,7 @@
     bindSearchInput();
     syncSearchGo();
     updateNavHighlight();
-    if (!isSearchPath()) {
-      press('browse-button');
-    }
-    // Jangan buka keyboard otomatis saat baru masuk tab Cari
+    // Tidak pindah ke /browse dulu agar Beranda tetap utuh di belakang -> pindah Cari <-> Beranda 100% instan 0ms!
     var inp = q('search-input');
     if (inp && document.activeElement === inp) inp.blur();
     setTimeout(function () {
@@ -1297,6 +1383,7 @@
     btnPBack.classList.toggle('show', subPage);
 
     fixFilterBar(document.getElementById('main-view'));
+    if (isHomePath()) ensureHomeBrowseShelf();
     bindSearchInput();
     if (html.classList.contains('sm-search')) syncSearchGo();
 
@@ -1623,11 +1710,23 @@
     // Floating button to return to Mobile Mode when viewing original Desktop UI
     btnBackMob = el('button', 'sm-back-mob', '', 'Mode Mobile');
 
-    // Toast & lightweight transition veil
+    // Toast, focused Search veil & lightweight transition veil
     toastEl = el('div', 'sm-toast');
     veilEl = el('div', 'sm-veil');
+    sVeil = el('div', 'sm-sveil');
+    var sVeilIc = el('div', 'sm-sveil-ic');
+    sVeilIc.appendChild(svgIcon(IC.search, 26));
+    sVeil.append(
+      sVeilIc,
+      el('div', 'sm-sveil-t', '', 'Cari musik'),
+      el('div', 'sm-sveil-s', '', 'Ketik judul lagu, artis, atau album di kolom pencarian di atas')
+    );
+    sVeil.addEventListener('click', function () {
+      var inp = q('search-input');
+      if (inp) inp.focus();
+    });
 
-    root.append(homeHdr, btnSBack, btnSGo, btnPBack, btnLCls, qHdr, qBg, qSide, veilEl, miniEl, nav, npEl, sheetBg, toastEl);
+    root.append(homeHdr, btnSBack, btnSGo, sVeil, btnPBack, btnLCls, qHdr, qBg, qSide, veilEl, miniEl, nav, npEl, sheetBg, toastEl);
     document.body.append(root, btnBackMob);
 
     // ===== EVENTS =====
@@ -2157,7 +2256,18 @@
       html.classList.remove('sm-search');
       var inp = q('search-input');
       if (inp) inp.blur();
-      updateNavHighlight();
+      if (isSearchPath()) {
+        goingHomeUntil = Date.now() + 700;
+        html.classList.add('sm-home');
+        navHome.classList.add('act');
+        navSearch.classList.remove('act');
+        navLib.classList.remove('act');
+        requestAnimationFrame(function () {
+          setTimeout(function () { press('home-button'); }, 0);
+        });
+      } else {
+        updateNavHighlight();
+      }
     });
 
     btnSGo.addEventListener('click', function () {

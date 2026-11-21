@@ -410,6 +410,95 @@ html.sm .sm-flist button {
   border-radius: 999px !important;
 }
 
+/* Rak kategori warna-warni 2 susun horizontal di Beranda */
+html.sm #sm-browse-shelf {
+  margin: 10px 0 18px !important;
+  padding: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html.sm .sm-br-hdr {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 16px 8px !important;
+}
+
+html.sm .sm-br-title {
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.2 !important;
+}
+
+html.sm .sm-br-all {
+  border: 0 !important;
+  background: transparent !important;
+  color: #b3b3b3 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  padding: 4px 2px !important;
+  cursor: pointer !important;
+}
+
+html.sm .sm-br-grid {
+  display: grid !important;
+  grid-template-rows: repeat(2, 68px) !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: 146px !important;
+  gap: 10px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: 2px 16px 6px !important;
+  scroll-snap-type: x proximity !important;
+}
+
+html.sm .sm-br-card {
+  position: relative !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  text-align: left !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  overflow: hidden !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  scroll-snap-align: start !important;
+  box-shadow: inset 0 -18px 28px rgba(0, 0, 0, 0.16) !important;
+}
+
+html.sm .sm-br-card:active {
+  filter: brightness(0.88) !important;
+}
+
+html.sm .sm-br-card span {
+  position: relative !important;
+  z-index: 2 !important;
+  max-width: 78% !important;
+  word-break: break-word !important;
+}
+
+html.sm .sm-br-card::after {
+  content: "" !important;
+  position: absolute !important;
+  right: -10px !important;
+  bottom: -10px !important;
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: rotate(24deg) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22) !important;
+  pointer-events: none !important;
+}
+
 /* ===== MOBILE UI CHROME ===== */
 #sm-root,
 #sm-root * {
@@ -533,6 +622,54 @@ html.sm.sm-search #sm-sback {
 
 html.sm.sm-search #sm-sgo.show {
   display: inline-flex;
+}
+
+/* Layar fokus pencarian musik instan (menutupi Beranda tanpa membongkarnya sampai user mengetik) */
+#sm-sveil {
+  display: none;
+  position: fixed;
+  top: calc(56px * var(--sm-k));
+  left: 0;
+  right: 0;
+  bottom: calc(120px * var(--sm-k));
+  background: #121212;
+  z-index: 2147482984;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: calc(24px * var(--sm-k));
+  gap: calc(10px * var(--sm-k));
+  color: #b3b3b3;
+}
+
+html.sm.sm-search:not(.sm-lib):not(.sm-queue):not(.sm-np) #sm-sveil:not(.hide) {
+  display: flex;
+}
+
+#sm-sveil-ic {
+  width: calc(54px * var(--sm-k));
+  height: calc(54px * var(--sm-k));
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: calc(2px * var(--sm-k));
+}
+
+#sm-sveil-t {
+  font-size: calc(16px * var(--sm-k));
+  font-weight: 800;
+  color: #fff;
+}
+
+#sm-sveil-s {
+  font-size: calc(12.5px * var(--sm-k));
+  color: #9e9e9e;
+  max-width: calc(260px * var(--sm-k));
+  line-height: 1.4;
 }
 
 /* Tombol Back mengambang di sub-halaman (Playlist, Album, Artis) */
