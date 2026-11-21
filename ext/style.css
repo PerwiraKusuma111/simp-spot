@@ -175,26 +175,35 @@ html.sm.sm-queue .sm-qpanel .sm-npv-hide {
   pointer-events: none !important;
 }
 
-/* Nonaktifkan klik pada nama artis di dalam Info Lagu & Sekarang memutar */
+/* Ubah kursor nama artis di Info Lagu & nonaktifkan baris Sekarang memutar di Antrean */
 html.sm.sm-queue .sm-qpanel a[href*="/artist/"],
 html.sm.sm-queue .sm-qpanel [data-testid="npv-artist-link"],
-html.sm.sm-queue .sm-qpanel [data-testid="context-item-info-artist"],
-html.sm.sm-queue .sm-qpanel [data-testid="context-item-info-subtitles"] a,
-html.sm.sm-queue .sm-qpanel [data-testid="credits-card"] a,
+html.sm.sm-queue .sm-qpanel [data-testid="credits-card"] a {
+  cursor: default !important;
+  text-decoration: none !important;
+}
+
 .sm-qrow.now,
 .sm-qrow.now * {
   pointer-events: none !important;
   cursor: default !important;
 }
 
-/* Animasi instan (1ms) saat buka/tutup Lirik agar tidak geser patah-patah yang bikin sakit mata */
-html.sm.sm-notrans *,
-html.sm.sm-notrans *::before,
-html.sm.sm-notrans *::after {
-  transition-duration: 0.001s !important;
-  transition-delay: 0s !important;
-  animation-duration: 0.001s !important;
-  animation-delay: 0s !important;
+/* Tirai ringan 1 elemen saat menutup Lirik agar animasi geser patah-patah Spotify tidak terlihat (tanpa lag!) */
+#sm-veil {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(120px * var(--sm-k));
+  background: #121212;
+  z-index: 2147482999;
+  pointer-events: none;
+}
+
+#sm-veil.show {
+  display: block;
 }
 
 /* Pertahankan now-playing-bar tetap hidup di luar layar agar seek & volume bekerja */

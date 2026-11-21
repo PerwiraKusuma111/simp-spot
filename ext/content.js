@@ -333,7 +333,7 @@
   var npSBar, npSFill, npCurTm, npDurTm;
   var npShuf, npPrev, npPP, npNext, npRep;
   var volWrap, volBar, volFill, volPct;
-  var btnVol, btnLyrics, btnQueue, btnBackMob, toastEl;
+  var btnVol, btnLyrics, btnQueue, btnBackMob, toastEl, veilEl;
   var sheetBg, shArt, shTitle, shArtist, shLikeBtn, shLikeLbl;
 
   var seeking = false, seekHoldUntil = 0, seekRatio = 0, curDur = 0;
@@ -924,17 +924,18 @@
     updateNavHighlight();
   }
 
-  var noTransTimer = null;
-  function flashNoTrans(ms) {
-    html.classList.add('sm-notrans');
-    clearTimeout(noTransTimer);
-    noTransTimer = setTimeout(function () {
-      html.classList.remove('sm-notrans');
-    }, ms || 380);
+  var veilTimer = null;
+  function flashVeil(ms) {
+    if (!veilEl) return;
+    veilEl.classList.add('show');
+    clearTimeout(veilTimer);
+    veilTimer = setTimeout(function () {
+      if (veilEl) veilEl.classList.remove('show');
+    }, ms || 280);
   }
 
-  function closeLyrics() {
-    flashNoTrans(420);
+  function closeLyrics(skipVeil) {
+    if (!skipVeil) flashVeil(280);
     var lb = q('lyrics-button');
     if (lb && (lb.getAttribute('data-active') === 'true' ||
                lb.getAttribute('aria-pressed') === 'true' ||
@@ -964,7 +965,7 @@
       qSide.appendChild(el('div', '', 'sm-qempty', 'Memuat antrean...'));
     }
 
-    if (wasLyrics) closeLyrics();
+    if (wasLyrics) closeLyrics(true);
 
     function launch() {
       if (seq !== qHarvestSeq || !html.classList.contains('sm-queue')) return;
@@ -1342,10 +1343,11 @@
     // Floating button to return to Mobile Mode when viewing original Desktop UI
     btnBackMob = el('button', 'sm-back-mob', '', 'Mode Mobile');
 
-    // Toast
+    // Toast & lightweight transition veil
     toastEl = el('div', 'sm-toast');
+    veilEl = el('div', 'sm-veil');
 
-    root.append(homeHdr, btnSBack, btnSGo, btnPBack, btnLCls, qHdr, qBg, qSide, miniEl, nav, npEl, sheetBg, toastEl);
+    root.append(homeHdr, btnSBack, btnSGo, btnPBack, btnLCls, qHdr, qBg, qSide, veilEl, miniEl, nav, npEl, sheetBg, toastEl);
     document.body.append(root, btnBackMob);
 
     // ===== EVENTS =====
@@ -1757,7 +1759,6 @@
         showToast('Lirik tidak tersedia untuk lagu ini');
         return;
       }
-      flashNoTrans(380);
       var qb = findQueueButton();
       if (qb && isQueueBtnActive(qb)) qb.click();
       var npvb = findNPVButton();
@@ -1772,16 +1773,32 @@
       setTimeout(function () { updateNavHighlight(); cleanLyricsTopBar(); }, 350);
     });
 
-    // Blokir klik pada nama artis di dalam panel Info Lagu (termasuk Tentang artis & Kredit)
-    document.addEventListener('click', function (ev) {
+    // Blokir klik pada semua link artis / judul / kartu Tentang artis di dalam panel Info Lagu
+    // (tombol asli seperti Mengikuti, Like/+, Bagikan, dan scroll tetap bekerja normal)
+    function blockInfoArtistNav(ev) {
       if (!html.classList.contains('sm-queue')) return;
-      var panel = ev.target && ev.target.closest && ev.target.closest('.sm-qpanel');
+      var t = ev.target;
+      if (!t || !t.closest) return;
+      var panel = t.closest('.sm-qpanel');
       if (!panel) return;
-      if (ev.target.closest('a[href*="/artist/"], [data-testid="npv-artist-link"], [data-testid="context-item-info-artist"]')) {
+      // Izinkan klik pada tombol kontrol asli (Mengikuti/Ikuti, +, Share, titik tiga, Lihat lebih banyak)
+      var btn = t.closest('button');
+      if (btn && !btn.matches('[data-testid="npv-artist-bio-button"]') && !btn.closest('[data-testid="npv-artist-link"]')) {
+        var btxt = (btn.textContent || '').trim().toLowerCase();
+        var blbl = (btn.getAttribute('aria-label') || '').toLowerCase();
+        // Kecuali jika button-nya itu sendiri adalah link/kartu artis (bukan Mengikuti/Like/Share/Lirik)
+        if (blbl.indexOf('artis') === -1 && blbl.indexOf('artist') === -1 && btxt.indexOf('tentang artis') === -1) {
+          return;
+        }
+      }
+      if (t.closest('a, [role="link"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"], [data-testid="context-item-info-artist"], [data-testid="credits-card"]')) {
         ev.preventDefault();
         ev.stopPropagation();
+        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
       }
-    }, true);
+    }
+    document.addEventListener('click', blockInfoArtistNav, true);
+    document.addEventListener('auxclick', blockInfoArtistNav, true);
 
     btnQueue.addEventListener('click', openQueue);
     qRef.addEventListener('click', openQueue);
