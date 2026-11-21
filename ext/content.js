@@ -820,30 +820,41 @@
     return btn;
   }
 
+  function isNPVMounted() {
+    return Boolean(q('NPV_Panel_OpenDiv') || q('lyrics-npv-section') || q('npv-artist-link') || q('npv-artist-bio-button'));
+  }
+
   function activateNPVPanel() {
     panelMode = 'info';
     var npvb = findNPVButton();
     var qb = findQueueButton();
-    if (npvb) {
-      if (qb && isQueueBtnActive(qb) && isQueueBtnActive(npvb)) {
-        qb.click();
-      } else if (!isQueueBtnActive(npvb)) {
-        npvb.click();
+
+    function ensureMounted(attempt) {
+      if (!html.classList.contains('sm-queue') || panelMode !== 'info') return;
+      if (isNPVMounted()) {
+        revealQueuePanel();
+        html.classList.remove('sm-qload');
+        return;
       }
-    } else if (qb) {
-      var xBtn = document.querySelector('[data-testid="queue-page"] button[aria-label="Tutup"], [data-testid="queue-page"] button[aria-label="Close"]');
-      if (xBtn) xBtn.click();
+      if (attempt === 0) {
+        if (npvb) {
+          npvb.click();
+        } else if (qb) {
+          var xBtn = document.querySelector('[data-testid="queue-page"] button[aria-label="Tutup"], [data-testid="queue-page"] button[aria-label="Close"]');
+          if (xBtn) xBtn.click();
+        }
+        setTimeout(function () { ensureMounted(1); }, 220);
+      } else if (attempt === 1) {
+        // Jika klik pertama tadi malah menutup NPV (karena sebelumnya aktif di balik Antrean), klik sekali lagi untuk membukanya
+        if (npvb) npvb.click();
+        setTimeout(function () { ensureMounted(2); }, 240);
+      } else {
+        revealQueuePanel();
+        html.classList.remove('sm-qload');
+      }
     }
-    setTimeout(function () {
-      if (!html.classList.contains('sm-queue')) return;
-      revealQueuePanel();
-      html.classList.remove('sm-qload');
-    }, 180);
-    setTimeout(function () {
-      if (!html.classList.contains('sm-queue')) return;
-      revealQueuePanel();
-      html.classList.remove('sm-qload');
-    }, 450);
+
+    ensureMounted(0);
   }
 
   function harvestAndShowSplit(seq) {
@@ -1387,12 +1398,14 @@
     });
 
     function findAddPlaylistPopover() {
-      var btns = document.querySelectorAll('button');
+      var btns = document.querySelectorAll('button, [role="button"]');
       for (var i = btns.length - 1; i >= 0; i--) {
         var b = btns[i];
         if (root && root.contains(b)) continue;
         var tx = (b.textContent || '').trim().toLowerCase();
-        if (tx === 'batal' || tx === 'cancel' || tx === 'selesai' || tx === 'done') {
+        if (tx.indexOf('batal') === 0 || tx === 'cancel' ||
+            tx === 'selesai' || tx === 'done' ||
+            tx === 'simpan' || tx === 'save') {
           var p = b.parentElement;
           for (var d = 0; d < 12 && p && p !== document.body; d++) {
             var low = (p.textContent || '').toLowerCase();
@@ -1409,7 +1422,7 @@
 
     function clickDoneOrDismiss(pop) {
       if (!pop) return;
-      var btns = pop.querySelectorAll('button');
+      var btns = pop.querySelectorAll('button, [role="button"]');
       var clicked = false;
       for (var k = 0; k < btns.length; k++) {
         var bt = (btns[k].textContent || '').trim().toLowerCase();
@@ -1422,7 +1435,7 @@
       if (!clicked) {
         for (var k2 = 0; k2 < btns.length; k2++) {
           var bt2 = (btns[k2].textContent || '').trim().toLowerCase();
-          if (bt2 === 'batal' || bt2 === 'cancel') {
+          if (bt2.indexOf('batal') === 0 || bt2 === 'cancel') {
             btns[k2].click();
             clicked = true;
             break;

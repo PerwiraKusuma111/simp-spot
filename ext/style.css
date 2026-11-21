@@ -77,6 +77,11 @@ html.sm.sm-lib #Desktop_LeftSidebar_Id > * {
 }
 
 /* Sembunyikan panel kanan kecuali saat mode Split Info+Antrean aktif */
+html.sm:not(.sm-queue) .Root__top-container {
+  --right-sidebar-width: 0px !important;
+  --panel-width: 0px !important;
+}
+
 html.sm:not(.sm-queue) #Desktop_PanelContainer_Id,
 html.sm:not(.sm-queue) .Root__right-sidebar,
 html.sm:not(.sm-queue) #main-view ~ aside,
