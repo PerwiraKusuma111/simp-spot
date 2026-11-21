@@ -84,9 +84,7 @@ html.sm:not(.sm-queue) .Root__top-container {
 
 html.sm:not(.sm-queue) #Desktop_PanelContainer_Id,
 html.sm:not(.sm-queue) .Root__right-sidebar,
-html.sm:not(.sm-queue) #main-view ~ aside,
-html.sm:not(.sm-queue) aside:has([data-testid="lyrics-npv-section"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"], [data-testid="queue-page"]),
-html.sm:not(.sm-queue) #main-view ~ div:has([data-testid="lyrics-npv-section"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"], [data-testid="queue-page"]) {
+html.sm:not(.sm-queue) #main-view ~ aside {
   display: none !important;
 }
 
@@ -380,9 +378,10 @@ html.sm #main-view [data-testid="carousel-scroller"] {
   -webkit-overflow-scrolling: touch !important;
 }
 
-html.sm #main-view [data-testid="component-shelf"] {
+html.sm #main-view [data-testid="component-shelf"],
+html.sm #main-view [data-testid="home-page"] section:nth-of-type(n+3) {
   content-visibility: auto;
-  contain-intrinsic-size: 230px;
+  contain-intrinsic-size: auto 230px;
 }
 
 /* Filter pills (Semua/Musik/Podcast) rapi di layar HP */

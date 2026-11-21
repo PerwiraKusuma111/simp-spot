@@ -15,6 +15,7 @@
     html.classList.add('sm', 'sm-nozoom');
   }
 
+  var lastScaleKey = '';
   function calcScale() {
     var sw = (window.innerHeight >= window.innerWidth)
       ? Math.min(screen.width || 360, screen.height || 360)
@@ -26,9 +27,13 @@
     var baseMz = k > 1.15 ? Math.max(1.2, Math.min(2.3, k * 0.85)) : 1;
     var mz = Math.max(0.75, Math.min(2.8, baseMz * userMul));
     var splitZ = Math.max(0.42, Math.min(2.2, (iw * 0.5) / 296));
-    html.style.setProperty('--sm-k', k.toFixed(3));
-    html.style.setProperty('--sm-mz', mz.toFixed(3));
-    html.style.setProperty('--sm-split-z', splitZ.toFixed(3));
+    var ks = k.toFixed(3), mzs = mz.toFixed(3), szs = splitZ.toFixed(3);
+    var key = ks + '|' + mzs + '|' + szs;
+    if (key === lastScaleKey) return;
+    lastScaleKey = key;
+    html.style.setProperty('--sm-k', ks);
+    html.style.setProperty('--sm-mz', mzs);
+    html.style.setProperty('--sm-split-z', szs);
   }
 
   function applyConfig() {
@@ -290,10 +295,10 @@
 
   function fixFilterBar(mv) {
     if (!mv) return;
-    // Kecilkan wrapper desktop yang punya padding kiri-kanan tebal (batch READ dulu lalu WRITE agar tidak layout thrashing!)
-    var nodes = mv.querySelectorAll('main, section, [role="presentation"], [data-testid="home-page"] > div');
+    // Kecilkan wrapper desktop utama yang punya padding kiri-kanan tebal (batch READ dulu lalu WRITE)
+    var nodes = mv.querySelectorAll('main, [data-testid="home-page"] > div');
     var toSlim = [];
-    for (var k = 0; k < nodes.length && k < 40; k++) {
+    for (var k = 0; k < nodes.length && k < 12; k++) {
       var nd = nodes[k];
       if (nd.classList.contains('sm-slim') || (padChecked && padChecked.has(nd))) continue;
       if (padChecked) padChecked.add(nd);
@@ -396,23 +401,24 @@
     var p = location.pathname || '';
     if (p.indexOf('/lyrics') === 0 || /\/lyrics(\/|$)/i.test(p)) return true;
     var lb = q('lyrics-button');
-    if (lb && (lb.getAttribute('data-active') === 'true' ||
-               lb.getAttribute('aria-pressed') === 'true' ||
-               lb.getAttribute('aria-checked') === 'true')) {
-      return true;
-    }
     if (lb) {
+      var da = lb.getAttribute('data-active');
+      var ap = lb.getAttribute('aria-pressed');
+      var ac = lb.getAttribute('aria-checked');
+      if (da === 'true' || ap === 'true' || ac === 'true') return true;
+      if (da === 'false' || ap === 'false') {
+        var fl = document.querySelector('[data-testid="fullscreen-lyric"]');
+        return Boolean(fl && !fl.closest('.sm-qpanel, #Desktop_PanelContainer_Id, .Root__right-sidebar, [data-testid="lyrics-npv-section"]'));
+      }
       try {
         if (isGreenColor(getComputedStyle(lb).color)) return true;
         var lsvg = lb.querySelector('svg');
         if (lsvg && (isGreenColor(getComputedStyle(lsvg).fill) || isGreenColor(getComputedStyle(lsvg).color))) return true;
       } catch (e) {}
     }
-    var lyrNodes = document.querySelectorAll('[data-testid="fullscreen-lyric"], [data-testid="lyrics-line"]');
-    for (var i = 0; i < lyrNodes.length; i++) {
-      if (!lyrNodes[i].closest('.sm-qpanel, #Desktop_PanelContainer_Id, .Root__right-sidebar, [data-testid="lyrics-npv-section"]')) {
-        return true;
-      }
+    var lyrNode = document.querySelector('[data-testid="fullscreen-lyric"], [data-testid="lyrics-line"]');
+    if (lyrNode && !lyrNode.closest('.sm-qpanel, #Desktop_PanelContainer_Id, .Root__right-sidebar, [data-testid="lyrics-npv-section"]')) {
+      return true;
     }
     return false;
   }
@@ -1283,10 +1289,11 @@
 
     updateNavHighlight();
     syncProfile();
-    if (html.classList.contains('sm-lyrics')) fixLyricsLayout();
+    var inLyrics = html.classList.contains('sm-lyrics');
+    if (inLyrics) fixLyricsLayout();
 
     // Tampilkan tombol back mengambang di sub-halaman (bukan Beranda, Cari, atau Lirik)
-    var subPage = !isHomePath() && !isSearchPath() && !isLyricsOpen();
+    var subPage = !isHomePath() && !isSearchPath() && !inLyrics;
     btnPBack.classList.toggle('show', subPage);
 
     fixFilterBar(document.getElementById('main-view'));
@@ -2109,7 +2116,7 @@
     // Bottom Navigation
     navHome.addEventListener('click', function () {
       goingHomeUntil = Date.now() + 700;
-      if (isLyricsOpen()) closeLyrics();
+      if (html.classList.contains('sm-lyrics')) closeLyrics();
       if (html.classList.contains('sm-queue')) closeQueue();
       var inp = q('search-input');
       if (inp && document.activeElement === inp) inp.blur();
@@ -2120,20 +2127,22 @@
       navSearch.classList.remove('act');
       navLib.classList.remove('act');
       if (!isHomePath()) {
-        requestAnimationFrame(function () { press('home-button'); });
+        requestAnimationFrame(function () {
+          setTimeout(function () { press('home-button'); }, 0);
+        });
       }
     });
 
     navSearch.addEventListener('click', function () {
       goingHomeUntil = 0;
-      if (isLyricsOpen()) closeLyrics();
+      if (html.classList.contains('sm-lyrics')) closeLyrics();
       if (html.classList.contains('sm-queue')) closeQueue();
       openSearch();
     });
 
     navLib.addEventListener('click', function () {
       goingHomeUntil = 0;
-      if (isLyricsOpen()) closeLyrics();
+      if (html.classList.contains('sm-lyrics')) closeLyrics();
       if (html.classList.contains('sm-queue')) closeQueue();
       if (html.classList.contains('sm-lib')) {
         html.classList.remove('sm-lib');

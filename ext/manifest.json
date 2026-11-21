@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Spotify Mobile Mode",
-  "version": "1.4.9",
+  "version": "1.5.0",
   "description": "Ubah tampilan Spotify Web Desktop jadi mirip aplikasi Spotify Mobile lengkap dengan slider lagu, Now Playing fullscreen, navigasi bawah, cari, koleksi, lirik, dan antrean",
   "permissions": [
     "storage",
