@@ -131,7 +131,8 @@
     heartOn: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z',
     vol: 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z',
     lyrics: 'M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z',
-    queue: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z'
+    queue: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',
+    info: 'M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z'
   };
 
   function parseSec(node) {
@@ -279,14 +280,14 @@
   }
 
   // ===== UI STATE & REFS =====
-  var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, btnPBack, qHdr, qCls;
+  var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, btnPBack, qHdr, qTitleEl, qCls;
   var miniEl, mArt, mTitle, mArtist, mLike, mPP, mPFill;
   var navHome, navSearch, navLib;
   var npEl, npDown, npRaw, npCtx, npArt, npTitle, npArtist, npLike;
   var npSBar, npSFill, npCurTm, npDurTm;
   var npShuf, npPrev, npPP, npNext, npRep;
   var volWrap, volBar, volFill, volPct;
-  var btnVol, btnLyrics, btnQueue, btnBackMob, toastEl;
+  var btnVol, btnLyrics, btnQueue, btnInfo, btnBackMob, toastEl;
 
   var seeking = false, seekHoldUntil = 0, seekRatio = 0, curDur = 0;
   var draggingVol = false;
@@ -525,9 +526,36 @@
       qb.getAttribute('data-active') === 'true';
   }
 
+  function findNPVButton() {
+    var b = q('control-button-npv');
+    if (b) return b;
+    var npb = q('now-playing-bar');
+    if (!npb) return null;
+    var btns = npb.querySelectorAll('button[aria-label]');
+    for (var i = 0; i < btns.length; i++) {
+      var lb = (btns[i].getAttribute('aria-label') || '').toLowerCase();
+      if (lb.indexOf('sedang diputar') > -1 || lb.indexOf('now playing') > -1) return btns[i];
+    }
+    return null;
+  }
+
+  function widenPanel(panel) {
+    if (!panel) return;
+    panel.style.setProperty('--panel-width', '100%', 'important');
+    panel.style.setProperty('--right-sidebar-width', '100%', 'important');
+    var els = panel.querySelectorAll('aside, [data-testid="queue-page"], [data-testid="NPV_Panel_OpenDiv"], [style*="width"]');
+    for (var i = 0; i < els.length && i < 30; i++) {
+      var w = els[i].style && els[i].style.width;
+      if (w && /px$/i.test(w) && parseFloat(w) >= 180) {
+        els[i].style.setProperty('width', '100%', 'important');
+        els[i].style.setProperty('max-width', '100%', 'important');
+      }
+    }
+  }
+
   function hasQueueContent(node) {
     if (!node) return false;
-    if (node.querySelector('[data-testid="queue-page"], [data-testid="tracklist-row"], [role="row"], [role="listitem"], a[href*="/track/"], a[href*="/album/"]')) {
+    if (node.querySelector('[data-testid="queue-page"], [data-testid="NPV_Panel_OpenDiv"], [data-testid="lyrics-npv-section"], [data-testid="npv-artist-link"], [data-testid="tracklist-row"], [role="row"], [role="listitem"], a[href*="/track/"], a[href*="/album/"]')) {
       return true;
     }
     var txt = (node.textContent || '').trim();
@@ -545,9 +573,9 @@
       return true;
     }
 
-    // 2. Cari panel antrean yang BENAR-BENAR berisi konten (baik di luar maupun panel samping di dalam #main-view)
-    var qp = q('queue-page');
-    var sideAside = document.querySelector('aside[aria-label*="Antrean"], aside[aria-label*="Queue"], [role="complementary"]');
+    // 2. Cari panel antrean / info lagu yang BENAR-BENAR berisi konten
+    var qp = q('queue-page') || q('NPV_Panel_OpenDiv');
+    var sideAside = document.querySelector('aside[aria-label*="Antrean"], aside[aria-label*="Queue"], aside[aria-label*="Sedang diputar"], aside[aria-label*="Now playing"], [role="complementary"]');
     var candidates = [
       qp,
       sideAside,
@@ -568,7 +596,6 @@
 
     var panel = anchor;
     if (mv && mv.contains(anchor)) {
-      // Panel samping ada di dalam #main-view: naik sampai elemen anak langsung di bawah #main-view atau <aside>
       while (panel.parentElement && panel.parentElement !== mv && panel.tagName !== 'ASIDE') {
         if (panel.parentElement.contains(q('home-page') || mv.querySelector('main'))) break;
         panel = panel.parentElement;
@@ -581,6 +608,7 @@
     }
     if (panel && panel !== mv && (!mv || !panel.contains(mv))) {
       panel.classList.add('sm-qpanel');
+      widenPanel(panel);
       return true;
     }
     return false;
@@ -596,12 +624,15 @@
     } else if (wasOpen) {
       var qb = findQueueButton();
       if (qb && isQueueBtnActive(qb)) qb.click();
+      var npvb = findNPVButton();
+      if (npvb && isQueueBtnActive(npvb)) npvb.click();
     }
     updateNavHighlight();
   }
 
   function openQueue() {
     var qb = findQueueButton();
+    if (qTitleEl) qTitleEl.textContent = 'Antrean';
     html.classList.remove('sm-np', 'sm-lib', 'sm-search');
     html.classList.add('sm-queue');
     updateNavHighlight();
@@ -615,7 +646,6 @@
     setTimeout(function () {
       if (!html.classList.contains('sm-queue')) return;
       if (revealQueuePanel()) return;
-      // Fallback: jika panel kanan Spotify kosong di layar sempit, buka rute SPA /queue langsung di #main-view
       try {
         if (location.pathname.indexOf('/queue') !== 0) {
           window.history.pushState({}, '', '/queue');
@@ -630,6 +660,22 @@
         }
       }, 450);
     }, 420);
+  }
+
+  function openInfo() {
+    var npvb = findNPVButton();
+    if (!npvb) {
+      showToast('Info lagu & Canvas belum tersedia');
+      return;
+    }
+    if (qTitleEl) qTitleEl.textContent = 'Info Lagu';
+    html.classList.remove('sm-np', 'sm-lib', 'sm-search');
+    html.classList.add('sm-queue');
+    updateNavHighlight();
+    if (!isQueueBtnActive(npvb)) npvb.click();
+    revealQueuePanel();
+    setTimeout(revealQueuePanel, 120);
+    setTimeout(revealQueuePanel, 380);
   }
 
   function tick() {
@@ -793,11 +839,12 @@
     btnPBack.setAttribute('aria-label', 'Kembali');
     btnPBack.appendChild(svgIcon(IC.back, 20));
 
-    // Queue top header
+    // Queue / Info top header
     qHdr = el('div', 'sm-qhdr');
-    qHdr.appendChild(el('span', '', '', 'Antrean'));
+    qTitleEl = el('span', '', '', 'Antrean');
+    qHdr.appendChild(qTitleEl);
     qCls = el('button', 'sm-qcls');
-    qCls.setAttribute('aria-label', 'Tutup Antrean');
+    qCls.setAttribute('aria-label', 'Tutup');
     qCls.appendChild(svgIcon(IC.close, 19));
     qHdr.appendChild(qCls);
 
@@ -933,9 +980,12 @@
     btnLyrics.append(svgIcon(IC.lyrics, 17), el('span', '', '', 'Lirik'));
 
     btnQueue = el('button', 'sm-np-q');
-    btnQueue.append(svgIcon(IC.queue, 17), el('span', '', '', 'Antrean'));
+    btnQueue.append(svgIcon(IC.queue, 16), el('span', '', '', 'Antrean'));
 
-    npFoot.append(btnVol, btnLyrics, btnQueue);
+    btnInfo = el('button', 'sm-np-info');
+    btnInfo.append(svgIcon(IC.info, 16), el('span', '', '', 'Info'));
+
+    npFoot.append(btnVol, btnLyrics, btnQueue, btnInfo);
 
     npBottom.append(npMeta, npProg, npCtl, volWrap, npFoot);
     npEl.append(npTop, npArtWrap, npBottom);
@@ -1100,6 +1150,8 @@
       }
       var qb = findQueueButton();
       if (qb && isQueueBtnActive(qb)) qb.click();
+      var npvb = findNPVButton();
+      if (npvb && isQueueBtnActive(npvb)) npvb.click();
       html.classList.remove('sm-np', 'sm-lib', 'sm-queue', 'sm-search');
       var tagged = document.querySelectorAll('.sm-qpanel');
       for (var i = 0; i < tagged.length; i++) tagged[i].classList.remove('sm-qpanel');
@@ -1108,6 +1160,7 @@
     });
 
     btnQueue.addEventListener('click', openQueue);
+    btnInfo.addEventListener('click', openInfo);
     qCls.addEventListener('click', closeQueue);
 
     // Bottom Navigation

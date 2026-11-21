@@ -121,15 +121,35 @@ html.sm.sm-queue .sm-qpanel > * {
 }
 
 html.sm.sm-queue .sm-qpanel aside,
+html.sm.sm-queue .sm-qpanel aside > div,
+html.sm.sm-queue .sm-qpanel [data-testid="queue-page"],
+html.sm.sm-queue .sm-qpanel [data-testid="NPV_Panel_OpenDiv"],
+html.sm.sm-queue .sm-qpanel [class*="os-host"],
+html.sm.sm-queue .sm-qpanel [class*="os-viewport"],
+html.sm.sm-queue .sm-qpanel [class*="os-content"] {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  --panel-width: 100% !important;
+  --right-sidebar-width: 100% !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+html.sm.sm-queue .sm-qpanel aside,
 html.sm.sm-queue .sm-qpanel [data-testid="queue-page"] {
   display: flex !important;
   flex-direction: column !important;
-  width: 100% !important;
-  max-width: 100% !important;
   min-height: 100% !important;
   height: 100% !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+}
+
+/* Sembunyikan tombol X duplikat bawaan Spotify di dalam panel agar tidak bikin bingung atau loncat ke panel lain */
+html.sm.sm-queue .sm-qpanel button[aria-label="Tutup"],
+html.sm.sm-queue .sm-qpanel button[aria-label="Close"],
+html.sm.sm-queue .sm-qpanel button[aria-label*="Tutup Antrean"],
+html.sm.sm-queue .sm-qpanel button[aria-label*="Close queue"] {
+  display: none !important;
 }
 
 /* Pertahankan now-playing-bar tetap hidup di luar layar agar seek & volume bekerja */
@@ -964,17 +984,17 @@ html.sm.sm-np #sm-np {
   font-variant-numeric: tabular-nums;
 }
 
-/* Bottom Actions Row (Volume, Lirik, Antrean) */
+/* Bottom Actions Row (Volume, Lirik, Antrean, Info) */
 #sm-np-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: calc(10px * var(--sm-k));
+  gap: calc(7px * var(--sm-k));
 }
 
 #sm-np-foot button {
   flex: 1;
-  height: calc(38px * var(--sm-k));
+  height: calc(36px * var(--sm-k));
   border: 0;
   border-radius: calc(999px * var(--sm-k));
   background: rgba(255, 255, 255, 0.09);
@@ -982,11 +1002,12 @@ html.sm.sm-np #sm-np {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: calc(6px * var(--sm-k));
-  font-size: calc(12px * var(--sm-k));
+  gap: calc(5px * var(--sm-k));
+  font-size: calc(11.5px * var(--sm-k));
   font-weight: 600;
   cursor: pointer;
-  padding: 0 calc(10px * var(--sm-k));
+  padding: 0 calc(6px * var(--sm-k));
+  white-space: nowrap;
 }
 
 #sm-np-foot button.on {
