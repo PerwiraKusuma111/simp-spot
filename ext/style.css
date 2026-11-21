@@ -333,7 +333,7 @@ html.sm #sm-root {
   justify-content: space-between;
 }
 
-html.sm.sm-home #sm-home-hdr {
+html.sm.sm-home:not(.sm-search):not(.sm-lib):not(.sm-queue):not(.sm-np) #sm-home-hdr {
   display: flex;
 }
 

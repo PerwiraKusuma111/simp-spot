@@ -34,12 +34,13 @@
       html.classList.add('sm');
       html.classList.remove('sm-off-btn');
     } else {
-      html.classList.remove('sm', 'sm-search', 'sm-lib', 'sm-queue', 'sm-np');
+      html.classList.remove('sm', 'sm-home', 'sm-search', 'sm-lib', 'sm-queue', 'sm-np');
       html.classList.add('sm-off-btn');
     }
     html.classList.toggle('sm-nozoom', Boolean(cfg.enabled && cfg.noZoom));
     try { localStorage.setItem('sm_off', cfg.enabled ? '0' : '1'); } catch (e) {}
     calcScale();
+    if (typeof updateNavHighlight === 'function') updateNavHighlight();
   }
 
   calcScale();
@@ -294,6 +295,7 @@
   var lastPlaying = null, lastLiked = null;
   var toastTimer = null;
   var libExpandTries = 0;
+  var lastLibClickAt = 0;
 
   function showToast(msg) {
     if (!toastEl) return;
@@ -326,20 +328,34 @@
     });
   }
 
+  function isHomePath() {
+    var p = (location.pathname || '/').replace(/\/+$/, '') || '/';
+    return p === '/' || p === '/home' || /^\/intl-[a-z0-9-]+$/i.test(p);
+  }
+
   function updateNavHighlight() {
+    if (!navHome) return;
     var isLib = html.classList.contains('sm-lib');
     var isQueue = html.classList.contains('sm-queue');
+    var isNP = html.classList.contains('sm-np');
     var isSearch = html.classList.contains('sm-search') || location.pathname.indexOf('/search') === 0;
-    var onHomePath = location.pathname === '/' || location.pathname === '';
-    html.classList.toggle('sm-home', Boolean(cfg.enabled && onHomePath && !isLib && !isQueue && !isSearch));
+    var onHome = isHomePath();
+    html.classList.toggle('sm-home', Boolean(cfg.enabled && onHome && !isLib && !isQueue && !isSearch && !isNP));
     navHome.classList.toggle('act', !isLib && !isSearch);
     navSearch.classList.toggle('act', !isLib && isSearch);
     navLib.classList.toggle('act', isLib);
   }
 
+  function findUserWidget() {
+    var u = q('user-widget-link');
+    if (u) return u;
+    var av = q('user-widget-avatar');
+    return av ? (av.closest('button, a') || av) : null;
+  }
+
   function syncProfile() {
     if (!btnProf) return;
-    var uLink = q('user-widget-link');
+    var uLink = findUserWidget();
     if (uLink) {
       var img = uLink.querySelector('img');
       var src = (img && img.src) ? img.src : '';
@@ -414,30 +430,62 @@
           lb.indexOf('tutup koleksi') > -1 || lb.indexOf('close your library') > -1) {
         return true;
       }
+      if (lb.indexOf('buka koleksi') > -1 || lb.indexOf('open your library') > -1 ||
+          lb.indexOf('perluas koleksi') > -1 || lb.indexOf('expand your library') > -1) {
+        return false;
+      }
     }
-    var txt = (sb.textContent || '').toLowerCase();
-    return txt.indexOf('koleksi kamu') > -1 || txt.indexOf('your library') > -1;
+    // Cek teks tombol yang BENAR-BENAR terlihat (hindari visually-hidden pada textContent!)
+    for (var j = 0; j < btns.length; j++) {
+      var b = btns[j];
+      if (b.offsetWidth < 40 || b.offsetHeight < 16) continue;
+      var t = (b.innerText || '').trim().toLowerCase();
+      if (t === 'buat' || t === 'create' || t === 'playlist' || t === 'album' ||
+          t.indexOf('baru diputar') > -1 || t.indexOf('recents') > -1 ||
+          t.indexOf('koleksi kamu') > -1 || t.indexOf('your library') > -1) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  function ensureLibraryExpanded() {
-    var sb = document.getElementById('Desktop_LeftSidebar_Id');
-    if (!sb || isLibraryExpanded(sb)) return true;
-
+  function findLibraryExpandBtn(sb) {
     var btns = sb.querySelectorAll('button');
     for (var i = 0; i < btns.length; i++) {
       var lb = (btns[i].getAttribute('aria-label') || '').toLowerCase();
       if (lb.indexOf('buka koleksi') > -1 || lb.indexOf('open your library') > -1 ||
-          lb.indexOf('perluas') > -1 || lb.indexOf('expand') > -1 ||
-          (lb.indexOf('koleksi') > -1 && lb.indexOf('cari') === -1 && lb.indexOf('buat') === -1) ||
-          (lb.indexOf('library') > -1 && lb.indexOf('search') === -1 && lb.indexOf('create') === -1)) {
-        btns[i].click();
-        return false;
+          lb.indexOf('perluas koleksi') > -1 || lb.indexOf('expand your library') > -1 ||
+          lb.indexOf('perluas') > -1 || lb.indexOf('expand') > -1) {
+        if (lb.indexOf('buat') === -1 && lb.indexOf('create') === -1) return btns[i];
       }
     }
-    // Fallback: tombol pertama di header sidebar saat mode ciut adalah tombol ikon pustaka
-    var firstBtn = sb.querySelector('header button') || sb.querySelector('button');
-    if (firstBtn && !(firstBtn.textContent || '').trim()) {
-      firstBtn.click();
+    for (var j = 0; j < btns.length; j++) {
+      var lb2 = (btns[j].getAttribute('aria-label') || '').toLowerCase();
+      if ((lb2.indexOf('koleksi') > -1 || lb2.indexOf('library') > -1) &&
+          lb2.indexOf('buat') === -1 && lb2.indexOf('create') === -1 &&
+          lb2.indexOf('cari') === -1 && lb2.indexOf('search') === -1) {
+        return btns[j];
+      }
+    }
+    var hdrBtn = sb.querySelector('header button');
+    if (hdrBtn) return hdrBtn;
+    for (var k = 0; k < btns.length; k++) {
+      var lb3 = (btns[k].getAttribute('aria-label') || '').toLowerCase();
+      if (lb3.indexOf('buat') === -1 && lb3.indexOf('create') === -1) return btns[k];
+    }
+    return null;
+  }
+
+  function ensureLibraryExpanded() {
+    var sb = document.getElementById('Desktop_LeftSidebar_Id');
+    if (!sb) return false;
+    if (isLibraryExpanded(sb)) return true;
+    var now = Date.now();
+    if (now - lastLibClickAt < 350) return false;
+    var target = findLibraryExpandBtn(sb);
+    if (target) {
+      lastLibClickAt = now;
+      target.click();
     }
     return false;
   }
@@ -446,11 +494,11 @@
     html.classList.remove('sm-search', 'sm-queue', 'sm-np');
     html.classList.add('sm-lib');
     lastPath = location.pathname;
-    libExpandTries = 5;
+    libExpandTries = 6;
+    lastLibClickAt = 0;
     updateNavHighlight();
     ensureLibraryExpanded();
-    setTimeout(ensureLibraryExpanded, 90);
-    setTimeout(ensureLibraryExpanded, 260);
+    setTimeout(ensureLibraryExpanded, 400);
   }
 
   function closeQueue() {
@@ -501,7 +549,7 @@
     syncProfile();
 
     // Tampilkan tombol back mengambang di sub-halaman
-    var subPage = location.pathname !== '/' && location.pathname !== '' && location.pathname.indexOf('/search') !== 0;
+    var subPage = !isHomePath() && location.pathname.indexOf('/search') !== 0;
     btnPBack.classList.toggle('show', subPage);
 
     fixFilterBar(document.getElementById('main-view'));
@@ -794,7 +842,7 @@
     });
 
     btnProf.addEventListener('click', function () {
-      var uLink = q('user-widget-link');
+      var uLink = findUserWidget();
       if (uLink) {
         uLink.click();
         setTimeout(pinProfileMenu, 30);
@@ -806,9 +854,14 @@
       }
     });
 
+    window.addEventListener('popstate', function () {
+      setTimeout(updateNavHighlight, 40);
+    });
+
     miniEl.addEventListener('click', function (ev) {
       if (ev.target.closest('#sm-m-acts')) return;
       html.classList.add('sm-np');
+      updateNavHighlight();
     });
 
     mPP.addEventListener('click', function (ev) {
@@ -828,6 +881,7 @@
     npDown.addEventListener('click', function () {
       html.classList.remove('sm-np');
       volWrap.classList.remove('show');
+      updateNavHighlight();
     });
 
     // Swipe down pada cover art untuk menutup Now Playing
@@ -840,6 +894,7 @@
         if (ev.changedTouches[0].clientY - swipeY0 > 70) {
           html.classList.remove('sm-np');
           volWrap.classList.remove('show');
+          updateNavHighlight();
         }
       }
       swipeY0 = null;
