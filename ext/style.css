@@ -159,10 +159,42 @@ html.sm.sm-queue .sm-qpanel [data-testid="queue-page"] {
   opacity: 1 !important;
 }
 
-/* Sembunyikan tombol X duplikat bawaan Spotify di dalam panel */
+/* Sembunyikan tombol X duplikat & tombol Perluas (panah diagonal) bawaan Spotify di dalam panel */
 html.sm.sm-queue [data-testid="queue-page"] button[aria-label="Tutup"],
-html.sm.sm-queue [data-testid="queue-page"] button[aria-label="Close"] {
+html.sm.sm-queue [data-testid="queue-page"] button[aria-label="Close"],
+html.sm.sm-queue .sm-qpanel button[aria-label*="Perluas"],
+html.sm.sm-queue .sm-qpanel button[aria-label*="Expand"],
+html.sm.sm-queue .sm-qpanel button[aria-label*="Bioskop"],
+html.sm.sm-queue .sm-qpanel button[aria-label*="Cinema"],
+html.sm.sm-queue .sm-qpanel button[aria-label*="Layar penuh"],
+html.sm.sm-queue .sm-qpanel button[aria-label*="Full screen"],
+html.sm.sm-queue .sm-qpanel button[aria-label*="Fullscreen"],
+html.sm.sm-queue .sm-qpanel [data-testid="npv-expand-button"],
+html.sm.sm-queue .sm-qpanel .sm-npv-hide {
   display: none !important;
+  pointer-events: none !important;
+}
+
+/* Nonaktifkan klik pada nama artis di dalam Info Lagu & Sekarang memutar */
+html.sm.sm-queue .sm-qpanel a[href*="/artist/"],
+html.sm.sm-queue .sm-qpanel [data-testid="npv-artist-link"],
+html.sm.sm-queue .sm-qpanel [data-testid="context-item-info-artist"],
+html.sm.sm-queue .sm-qpanel [data-testid="context-item-info-subtitles"] a,
+html.sm.sm-queue .sm-qpanel [data-testid="credits-card"] a,
+.sm-qrow.now,
+.sm-qrow.now * {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+/* Animasi instan (1ms) saat buka/tutup Lirik agar tidak geser patah-patah yang bikin sakit mata */
+html.sm.sm-notrans *,
+html.sm.sm-notrans *::before,
+html.sm.sm-notrans *::after {
+  transition-duration: 0.001s !important;
+  transition-delay: 0s !important;
+  animation-duration: 0.001s !important;
+  animation-delay: 0s !important;
 }
 
 /* Pertahankan now-playing-bar tetap hidup di luar layar agar seek & volume bekerja */

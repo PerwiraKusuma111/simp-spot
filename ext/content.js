@@ -658,6 +658,27 @@
     return txt.length > 12;
   }
 
+  function hideNPVExpandBtn(panel) {
+    if (!panel) return;
+    var btns = panel.querySelectorAll('button');
+    for (var i = 0; i < btns.length && i < 16; i++) {
+      var b = btns[i];
+      if (b.classList.contains('sm-npv-hide')) continue;
+      var lb = (b.getAttribute('aria-label') || '').toLowerCase();
+      if (lb.indexOf('perluas') > -1 || lb.indexOf('expand') > -1 ||
+          lb.indexOf('bioskop') > -1 || lb.indexOf('cinema') > -1 ||
+          lb.indexOf('layar penuh') > -1 || lb.indexOf('full screen') > -1 ||
+          lb.indexOf('fullscreen') > -1 || lb.indexOf('perbesar') > -1) {
+        b.classList.add('sm-npv-hide');
+      }
+      // Jika tombol titik tiga ('opsi lainnya'/'more options') ketemu di header panel, tombol tepat setelahnya adalah tombol panah perluas
+      if (lb.indexOf('opsi lainnya') > -1 || lb.indexOf('more options') > -1 || lb.indexOf('selengkapnya') > -1) {
+        var nxt = b.nextElementSibling;
+        if (nxt && nxt.tagName === 'BUTTON') nxt.classList.add('sm-npv-hide');
+      }
+    }
+  }
+
   function revealQueuePanel() {
     if (!html.classList.contains('sm-queue')) return false;
     var mv = document.getElementById('main-view');
@@ -705,6 +726,7 @@
     if (panel && panel !== mv && (!mv || !panel.contains(mv))) {
       panel.classList.add('sm-qpanel');
       if (!mv || !mv.contains(panel)) html.classList.add('sm-qsplit');
+      hideNPVExpandBtn(panel);
       return true;
     }
     return false;
@@ -902,7 +924,17 @@
     updateNavHighlight();
   }
 
+  var noTransTimer = null;
+  function flashNoTrans(ms) {
+    html.classList.add('sm-notrans');
+    clearTimeout(noTransTimer);
+    noTransTimer = setTimeout(function () {
+      html.classList.remove('sm-notrans');
+    }, ms || 380);
+  }
+
   function closeLyrics() {
+    flashNoTrans(420);
     var lb = q('lyrics-button');
     if (lb && (lb.getAttribute('data-active') === 'true' ||
                lb.getAttribute('aria-pressed') === 'true' ||
@@ -913,6 +945,7 @@
       else press('home-button');
     }
     html.classList.remove('sm-lyrics');
+    updateNavHighlight();
     setTimeout(updateNavHighlight, 80);
   }
 
@@ -1724,6 +1757,7 @@
         showToast('Lirik tidak tersedia untuk lagu ini');
         return;
       }
+      flashNoTrans(380);
       var qb = findQueueButton();
       if (qb && isQueueBtnActive(qb)) qb.click();
       var npvb = findNPVButton();
@@ -1737,6 +1771,17 @@
       setTimeout(function () { updateNavHighlight(); cleanLyricsTopBar(); }, 100);
       setTimeout(function () { updateNavHighlight(); cleanLyricsTopBar(); }, 350);
     });
+
+    // Blokir klik pada nama artis di dalam panel Info Lagu (termasuk Tentang artis & Kredit)
+    document.addEventListener('click', function (ev) {
+      if (!html.classList.contains('sm-queue')) return;
+      var panel = ev.target && ev.target.closest && ev.target.closest('.sm-qpanel');
+      if (!panel) return;
+      if (ev.target.closest('a[href*="/artist/"], [data-testid="npv-artist-link"], [data-testid="context-item-info-artist"]')) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+    }, true);
 
     btnQueue.addEventListener('click', openQueue);
     qRef.addEventListener('click', openQueue);
