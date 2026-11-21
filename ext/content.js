@@ -239,7 +239,21 @@
   }
 
   function fixFilterBar(mv) {
-    if (!mv || mv.querySelector('.sm-flist')) return;
+    if (!mv) return;
+    // Kecilkan wrapper desktop yang punya padding kiri-kanan tebal (>=18px) tanpa menambah padding elemen lain
+    var nodes = mv.querySelectorAll('main, section, [role="presentation"], [data-testid="home-page"] > div');
+    for (var k = 0; k < nodes.length && k < 40; k++) {
+      var nd = nodes[k];
+      if (nd.classList.contains('sm-slim') || nd.dataset.smPadChk) continue;
+      nd.dataset.smPadChk = '1';
+      var cs = getComputedStyle(nd);
+      var pl = parseFloat(cs.paddingLeft) || 0;
+      var pr = parseFloat(cs.paddingRight) || 0;
+      if (pl >= 18 && pr >= 18 && nd.offsetWidth > 260) {
+        nd.classList.add('sm-slim');
+      }
+    }
+    if (mv.querySelector('.sm-flist')) return;
     var btns = mv.querySelectorAll('button');
     for (var i = 0; i < btns.length; i++) {
       var tx = (btns[i].textContent || '').trim().toLowerCase();
@@ -264,7 +278,7 @@
   }
 
   // ===== UI STATE & REFS =====
-  var root, btnSBack, btnSGo, btnPBack, qHdr, qCls;
+  var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, btnPBack, qHdr, qCls;
   var miniEl, mArt, mTitle, mArtist, mLike, mPP, mPFill;
   var navHome, navSearch, navLib;
   var npEl, npDown, npRaw, npCtx, npArt, npTitle, npArtist, npLike;
@@ -276,9 +290,10 @@
   var seeking = false, seekHoldUntil = 0, seekRatio = 0, curDur = 0;
   var draggingVol = false;
   var lastPath = location.pathname;
-  var lastArtRaw = '', lastTitle = '', lastArtist = '';
+  var lastArtRaw = '', lastTitle = '', lastArtist = '', lastProfKey = '';
   var lastPlaying = null, lastLiked = null;
   var toastTimer = null;
+  var libExpandTries = 0;
 
   function showToast(msg) {
     if (!toastEl) return;
@@ -313,10 +328,59 @@
 
   function updateNavHighlight() {
     var isLib = html.classList.contains('sm-lib');
+    var isQueue = html.classList.contains('sm-queue');
     var isSearch = html.classList.contains('sm-search') || location.pathname.indexOf('/search') === 0;
+    var onHomePath = location.pathname === '/' || location.pathname === '';
+    html.classList.toggle('sm-home', Boolean(cfg.enabled && onHomePath && !isLib && !isQueue && !isSearch));
     navHome.classList.toggle('act', !isLib && !isSearch);
     navSearch.classList.toggle('act', !isLib && isSearch);
     navLib.classList.toggle('act', isLib);
+  }
+
+  function syncProfile() {
+    if (!btnProf) return;
+    var uLink = q('user-widget-link');
+    if (uLink) {
+      var img = uLink.querySelector('img');
+      var src = (img && img.src) ? img.src : '';
+      var label = (uLink.getAttribute('aria-label') || uLink.getAttribute('title') || uLink.textContent || '').trim();
+      var initial = label ? label.charAt(0).toUpperCase() : 'P';
+      var key = 'in|' + src + '|' + initial;
+      if (key === lastProfKey) return;
+      lastProfKey = key;
+      btnProf.className = 'logged';
+      btnProf.setAttribute('aria-label', label || 'Profil');
+      while (btnProf.firstChild) btnProf.removeChild(btnProf.firstChild);
+      if (src) {
+        var av = document.createElement('img');
+        av.src = src;
+        av.alt = initial;
+        btnProf.appendChild(av);
+      } else {
+        btnProf.textContent = initial;
+      }
+    } else {
+      if (lastProfKey === 'out') return;
+      lastProfKey = 'out';
+      btnProf.className = 'login';
+      btnProf.setAttribute('aria-label', 'Masuk');
+      while (btnProf.firstChild) btnProf.removeChild(btnProf.firstChild);
+      btnProf.textContent = 'Masuk';
+    }
+  }
+
+  function pinProfileMenu() {
+    var menu = q('user-widget-menu');
+    if (!menu) return;
+    var node = menu;
+    while (node.parentElement && node.parentElement !== document.body) {
+      var pos = getComputedStyle(node).position;
+      if (pos === 'fixed' || pos === 'absolute' || node.id === 'context-menu' || node.hasAttribute('data-tippy-root')) {
+        node.classList.add('sm-prof-portal');
+        break;
+      }
+      node = node.parentElement;
+    }
   }
 
   function closeOverlays() {
@@ -341,17 +405,52 @@
     }, 60);
   }
 
+  function isLibraryExpanded(sb) {
+    if (!sb) return false;
+    var btns = sb.querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) {
+      var lb = (btns[i].getAttribute('aria-label') || '').toLowerCase();
+      if (lb.indexOf('ciutkan') > -1 || lb.indexOf('collapse') > -1 ||
+          lb.indexOf('tutup koleksi') > -1 || lb.indexOf('close your library') > -1) {
+        return true;
+      }
+    }
+    var txt = (sb.textContent || '').toLowerCase();
+    return txt.indexOf('koleksi kamu') > -1 || txt.indexOf('your library') > -1;
+  }
+
+  function ensureLibraryExpanded() {
+    var sb = document.getElementById('Desktop_LeftSidebar_Id');
+    if (!sb || isLibraryExpanded(sb)) return true;
+
+    var btns = sb.querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) {
+      var lb = (btns[i].getAttribute('aria-label') || '').toLowerCase();
+      if (lb.indexOf('buka koleksi') > -1 || lb.indexOf('open your library') > -1 ||
+          lb.indexOf('perluas') > -1 || lb.indexOf('expand') > -1 ||
+          (lb.indexOf('koleksi') > -1 && lb.indexOf('cari') === -1 && lb.indexOf('buat') === -1) ||
+          (lb.indexOf('library') > -1 && lb.indexOf('search') === -1 && lb.indexOf('create') === -1)) {
+        btns[i].click();
+        return false;
+      }
+    }
+    // Fallback: tombol pertama di header sidebar saat mode ciut adalah tombol ikon pustaka
+    var firstBtn = sb.querySelector('header button') || sb.querySelector('button');
+    if (firstBtn && !(firstBtn.textContent || '').trim()) {
+      firstBtn.click();
+    }
+    return false;
+  }
+
   function openLibrary() {
     html.classList.remove('sm-search', 'sm-queue', 'sm-np');
     html.classList.add('sm-lib');
     lastPath = location.pathname;
+    libExpandTries = 5;
     updateNavHighlight();
-    // Jika sidebar sebelumnya dalam mode ciut (icon-only), perluas otomatis
-    var sb = document.getElementById('Desktop_LeftSidebar_Id');
-    if (sb) {
-      var exp = sb.querySelector('button[aria-label*="Perluas"], button[aria-label*="Expand"]');
-      if (exp) exp.click();
-    }
+    ensureLibraryExpanded();
+    setTimeout(ensureLibraryExpanded, 90);
+    setTimeout(ensureLibraryExpanded, 260);
   }
 
   function closeQueue() {
@@ -380,6 +479,12 @@
     if (root && !root.isConnected && document.body) document.body.appendChild(root);
     if (!cfg.enabled || !mTitle) return;
 
+    // Pastikan Koleksi langsung diperluas bila masih dalam mode ciut
+    if (html.classList.contains('sm-lib') && libExpandTries > 0) {
+      if (ensureLibraryExpanded()) libExpandTries = 0;
+      else libExpandTries--;
+    }
+
     // Auto-tutup overlay Koleksi jika user baru saja membuka playlist/album/artis
     if (location.pathname !== lastPath) {
       var prev = lastPath;
@@ -390,8 +495,10 @@
       if (html.classList.contains('sm-search') && lastPath.indexOf('/search') !== 0) {
         html.classList.remove('sm-search');
       }
-      updateNavHighlight();
     }
+
+    updateNavHighlight();
+    syncProfile();
 
     // Tampilkan tombol back mengambang di sub-halaman
     var subPage = location.pathname !== '/' && location.pathname !== '' && location.pathname.indexOf('/search') !== 0;
@@ -668,10 +775,29 @@
     // Toast
     toastEl = el('div', 'sm-toast');
 
-    root.append(btnSBack, btnSGo, btnPBack, qHdr, miniEl, nav, npEl, toastEl);
+    root.append(homeHdr, btnSBack, btnSGo, btnPBack, qHdr, miniEl, nav, npEl, toastEl);
     document.body.append(root, btnBackMob);
 
     // ===== EVENTS =====
+    btnBrand.addEventListener('click', function () {
+      var mv = document.getElementById('main-view');
+      if (mv) mv.scrollTo({ top: 0, behavior: 'smooth' });
+      press('home-button');
+    });
+
+    btnProf.addEventListener('click', function () {
+      var uLink = q('user-widget-link');
+      if (uLink) {
+        uLink.click();
+        setTimeout(pinProfileMenu, 30);
+        setTimeout(pinProfileMenu, 120);
+      } else {
+        var loginBtn = q('login-button');
+        if (loginBtn) loginBtn.click();
+        else window.location.href = 'https://accounts.spotify.com/login?continue=' + encodeURIComponent(window.location.href);
+      }
+    });
+
     miniEl.addEventListener('click', function (ev) {
       if (ev.target.closest('#sm-m-acts')) return;
       html.classList.add('sm-np');
