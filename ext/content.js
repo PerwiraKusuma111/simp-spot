@@ -971,20 +971,75 @@
     return txt.trim().length > 30;
   }
 
+  function findExpandNPVArrow() {
+    var btns = document.querySelectorAll('button[aria-label], button[title]');
+    for (var i = 0; i < btns.length; i++) {
+      var b = btns[i];
+      if (isExcludedSidebarNode(b)) continue;
+      var lb = ((b.getAttribute('aria-label') || '') + ' ' + (b.getAttribute('title') || '')).toLowerCase();
+      if (lb.indexOf('perlihatkan tampilan') > -1 ||
+          lb.indexOf('tampilkan tampilan') > -1 ||
+          lb.indexOf('buka tampilan') > -1 ||
+          lb.indexOf('show now playing') > -1 ||
+          lb.indexOf('open now playing') > -1 ||
+          lb.indexOf('expand now playing') > -1 ||
+          (lb.indexOf('perlihatkan') > -1 && (lb.indexOf('memutar') > -1 || lb.indexOf('diputar') > -1 || lb.indexOf('sekarang') > -1))) {
+        return b;
+      }
+    }
+    return null;
+  }
+
+  function isNPVExpanded() {
+    if (isQueuePanelVisible()) return false;
+    var expArrow = findExpandNPVArrow();
+    if (expArrow) {
+      var ar = expArrow.getBoundingClientRect();
+      if (ar.width > 0 && ar.height > 0) return false;
+    }
+    if (!hasRealNPVContent()) return false;
+    var rsb = getRightSidebarRoot();
+    if (!rsb) return false;
+    var target = rsb.querySelector('aside') || rsb;
+    var rr = target.getBoundingClientRect();
+    // Jika masih sembunyi / terlipat jadi sliver tipis di pinggir kanan, anggap belum terbuka penuh
+    if (rr.width > 0 && rr.width < 90) return false;
+    if (rr.left > (window.innerWidth || 360) * 0.35) return false;
+    return true;
+  }
+
   function findQueueCloseButton() {
     var rsb = getRightSidebarRoot();
     if (!rsb) return null;
-    return rsb.querySelector('button[aria-label="Tutup"], button[aria-label="Close"]');
+    var btns = rsb.querySelectorAll('button');
+    for (var i = 0; i < btns.length && i < 8; i++) {
+      var lb = (btns[i].getAttribute('aria-label') || '').toLowerCase();
+      if (lb.indexOf('tutup') > -1 || lb.indexOf('close') > -1) return btns[i];
+    }
+    return null;
+  }
+
+  var lastExpandNPVClickAt = 0;
+  function tryClickExpandNPV(minGapMs) {
+    var now = Date.now();
+    if (now - lastExpandNPVClickAt < (minGapMs || 450)) return false;
+    var exp = findExpandNPVArrow();
+    if (exp) {
+      lastExpandNPVClickAt = now;
+      exp.click();
+      return true;
+    }
+    return false;
   }
 
   function activateNPVPanel(seq) {
     panelMode = 'info';
-    var retried = false;
+    var closedQueueOnce = false;
 
     function pollNPV(step) {
       if (seq !== qHarvestSeq || !html.classList.contains('sm-queue') || panelMode !== 'info') return;
-      if (hasRealNPVContent()) {
-        revealQueuePanel();
+      revealQueuePanel();
+      if (isNPVExpanded()) {
         html.classList.remove('sm-qload');
         return;
       }
@@ -993,39 +1048,39 @@
       var qb = findQueueButton();
 
       if (step === 0) {
-        if (npvb) {
+        if (isQueuePanelVisible()) {
+          if (npvb) {
+            npvb.click();
+          } else {
+            var xBtn = findQueueCloseButton();
+            if (xBtn) xBtn.click();
+            else if (qb) qb.click();
+          }
+        } else if (!tryClickExpandNPV(300) && npvb && !isQueueBtnActive(npvb)) {
           npvb.click();
-        } else {
-          var xBtn = findQueueCloseButton();
-          if (xBtn) xBtn.click();
-          else if (qb && isQueueBtnActive(qb)) qb.click();
         }
         setTimeout(function () { pollNPV(1); }, 150);
         return;
       }
 
-      // Di step 4 (~600ms), hanya klik ulang jika masih nyangkut di panel Antrekan atau sidebar benar-benar tertutup
-      if (step === 4 && !retried) {
-        retried = true;
+      // Jika Antrekan sudah ketutup dan muncul panah kecil '<' "Perlihatkan tampilan Sekarang Memutar", langsung klik otomatis!
+      if (!isQueuePanelVisible()) {
+        tryClickExpandNPV(450);
+      }
+
+      // Di step 4 (~600ms), jika masih nyangkut di Antrekan, tutup Antrekan lewat tombol X / qb
+      if (step === 4 && !closedQueueOnce) {
+        closedQueueOnce = true;
         if (isQueuePanelVisible()) {
           var qx = findQueueCloseButton();
           if (qx) qx.click();
           else if (qb) qb.click();
-          setTimeout(function () {
-            if (seq !== qHarvestSeq || !html.classList.contains('sm-queue') || panelMode !== 'info') return;
-            if (!hasRealNPVContent()) {
-              var n2 = findNPVButton();
-              if (n2 && !isQueueBtnActive(n2)) n2.click();
-            }
-            pollNPV(5);
-          }, 180);
-          return;
-        } else if (npvb && !isQueueBtnActive(npvb)) {
+        } else if (!tryClickExpandNPV(300) && npvb && !isQueueBtnActive(npvb)) {
           npvb.click();
         }
       }
 
-      if (step < 10) {
+      if (step < 12) {
         setTimeout(function () { pollNPV(step + 1); }, 150);
       } else {
         revealQueuePanel();
@@ -1044,15 +1099,9 @@
       var items = captureQueueFromDOM();
       if (items.length > 0 || tries >= 8) {
         renderQueueList(items);
-        var hasNPV = Boolean(findNPVButton() || hasRealNPVContent());
-        if (hasNPV) {
-          html.classList.remove('sm-qfull');
-          activateNPVPanel(seq);
-        } else {
-          // Fallback: jika tombol Info/NPV tidak ada, tetap tampilkan Antrean penuh
-          html.classList.remove('sm-qload');
-          html.classList.add('sm-qfull');
-        }
+        // Selalu pertahankan Split View 50/50 (Kiri Info Lagu, Kanan Antrean) — jangan pernah geser Antrean ke kiri
+        html.classList.remove('sm-qfull');
+        activateNPVPanel(seq);
         return;
       }
       tries++;
@@ -1066,13 +1115,13 @@
     panelMode = 'queue';
     html.classList.add('sm-qload');
     var qb = findQueueButton();
-    if (qb && !isQueueBtnActive(qb)) qb.click();
+    if (qb && !isQueuePanelVisible()) qb.click();
 
     var tries = 0;
     function findAndPlay() {
       if (seq !== qHarvestSeq || !html.classList.contains('sm-queue')) return;
       revealQueuePanel();
-      var rootQ = q('queue-page') || document.getElementById('Desktop_PanelContainer_Id');
+      var rootQ = q('queue-page') || getRightSidebarRoot();
       var rows = rootQ ? rootQ.querySelectorAll('[data-testid="tracklist-row"], [role="row"]') : [];
       var hit = null;
       for (var i = 0; i < rows.length; i++) {
@@ -1132,7 +1181,14 @@
     if (wasOpen && location.pathname.indexOf('/queue') === 0 && window.history.length > 1) {
       window.history.back();
     } else if (wasOpen) {
-      closeSpotifyRightSidebar();
+      // Hanya tutup Antrekan jika sedang terbuka; biarkan Info Lagu (NPV) tetap terbuka di latar belakang agar tidak menciut ke mode panah '<'
+      var qb = findQueueButton();
+      if (qb && isQueueBtnActive(qb)) {
+        qb.click();
+      } else if (isQueuePanelVisible()) {
+        var qx = findQueueCloseButton();
+        if (qx) qx.click();
+      }
     }
     updateNavHighlight();
   }
@@ -1204,6 +1260,9 @@
     // Pastikan panel Antrean selalu tampil penuh di atas #main-view saat mode Antrean aktif
     if (html.classList.contains('sm-queue')) {
       revealQueuePanel();
+      if (panelMode === 'info' && !html.classList.contains('sm-qload') && !isQueuePanelVisible()) {
+        tryClickExpandNPV(1500);
+      }
     }
 
     // Auto-tutup overlay Koleksi jika user baru saja membuka playlist/album/artis
@@ -2013,13 +2072,16 @@
           lbl.indexOf('save') > -1 || lbl.indexOf('suka') > -1 || lbl.indexOf('like') > -1 ||
           lbl.indexOf('bagikan') > -1 || lbl.indexOf('share') > -1 ||
           lbl.indexOf('opsi lainnya') > -1 || lbl.indexOf('more options') > -1 ||
-          lbl.indexOf('ikuti') > -1 || lbl.indexOf('follow') > -1) {
+          lbl.indexOf('ikuti') > -1 || lbl.indexOf('follow') > -1 ||
+          lbl.indexOf('perlihatkan tampilan') > -1 || lbl.indexOf('show now playing') > -1) {
         return true;
       }
       return false;
     }
 
     function blockInfoArtistNav(ev) {
+      // Jangan pernah memblokir klik terprogram dari ekstensi sendiri (tutup Antrekan, buka panah Info Lagu, putar antrean)
+      if (!ev.isTrusted) return;
       if (!html.classList.contains('sm-queue')) return;
       var t = ev.target;
       if (!t || !t.closest) return;
