@@ -134,7 +134,13 @@
     vol: 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z',
     lyrics: 'M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z',
     queue: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',
-    refresh: 'M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z'
+    refresh: 'M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z',
+    more: 'M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
+    playlistAdd: 'M14 10H3v2h11v-2zm0-4H3v2h11V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM3 16h7v-2H3v2z',
+    share: 'M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z',
+    artist: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
+    album: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z',
+    desktop: 'M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7l-2 3v1h8v-1l-2-3h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 12H3V4h18v10z'
   };
 
   function parseSec(node) {
@@ -323,11 +329,12 @@
   var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, btnPBack, btnLCls, qHdr, qBg, qSide, qRef, qCls;
   var miniEl, mArt, mTitle, mArtist, mLike, mPP, mPFill;
   var navHome, navSearch, navLib;
-  var npEl, npDown, npRaw, npCtx, npArt, npTitle, npArtist, npLike;
+  var npEl, npDown, npMore, npCtx, npArt, npTitle, npArtist, npLike;
   var npSBar, npSFill, npCurTm, npDurTm;
   var npShuf, npPrev, npPP, npNext, npRep;
   var volWrap, volBar, volFill, volPct;
   var btnVol, btnLyrics, btnQueue, btnBackMob, toastEl;
+  var sheetBg, shArt, shTitle, shArtist, shLikeBtn, shLikeLbl;
 
   var seeking = false, seekHoldUntil = 0, seekRatio = 0, curDur = 0;
   var draggingVol = false;
@@ -379,9 +386,39 @@
     return p.indexOf('/search') === 0 || p.indexOf('/browse') === 0 || /\/(search|browse)(\/|$)/i.test(p);
   }
 
-  function isLyricsPath(p) {
-    p = p || location.pathname || '';
-    return p.indexOf('/lyrics') === 0 || /\/lyrics(\/|$)/i.test(p);
+  function isLyricsOpen() {
+    var p = location.pathname || '';
+    if (p.indexOf('/lyrics') === 0 || /\/lyrics(\/|$)/i.test(p)) return true;
+    var lb = q('lyrics-button');
+    if (lb && (lb.getAttribute('data-active') === 'true' ||
+               lb.getAttribute('aria-pressed') === 'true' ||
+               lb.getAttribute('aria-checked') === 'true')) {
+      return true;
+    }
+    var mv = document.getElementById('main-view');
+    if (mv && mv.querySelector('[data-testid="fullscreen-lyric"], [data-testid="lyrics-line"]')) {
+      return true;
+    }
+    return false;
+  }
+
+  function cleanLyricsTopBar() {
+    if (!html.classList.contains('sm-lyrics')) return;
+    var mv = document.getElementById('main-view');
+    if (!mv) return;
+    var firstLyric = mv.querySelector('[data-testid="fullscreen-lyric"], [data-testid="lyrics-line"]');
+    var lyricTop = firstLyric ? firstLyric.getBoundingClientRect().top : 140;
+    var btns = mv.querySelectorAll('button');
+    for (var i = 0; i < btns.length && i < 20; i++) {
+      var b = btns[i];
+      if (b.classList.contains('sm-lyr-hide')) continue;
+      if (b.closest('[data-testid="fullscreen-lyric"], [data-testid="lyrics-line"]')) continue;
+      var r = b.getBoundingClientRect();
+      // Sembunyikan tombol-tombol kecil di bagian atas area lirik (terjemahan/vokal/tutup bawaan)
+      if (r.height > 0 && r.height <= 64 && r.top >= 0 && r.top < Math.max(120, lyricTop)) {
+        b.classList.add('sm-lyr-hide');
+      }
+    }
   }
 
   function updateNavHighlight() {
@@ -390,10 +427,10 @@
     var isQueue = html.classList.contains('sm-queue');
     var isNP = html.classList.contains('sm-np');
     var isSearch = html.classList.contains('sm-search') || isSearchPath();
+    var onLyrics = isLyricsOpen();
     var onHome = isHomePath();
-    var onLyrics = isLyricsPath();
-    html.classList.toggle('sm-home', Boolean(cfg.enabled && onHome && !isLib && !isQueue && !isSearch && !isNP));
     html.classList.toggle('sm-lyrics', Boolean(cfg.enabled && onLyrics && !isLib && !isQueue && !isSearch && !isNP));
+    html.classList.toggle('sm-home', Boolean(cfg.enabled && onHome && !onLyrics && !isLib && !isQueue && !isSearch && !isNP));
     navHome.classList.toggle('act', !isLib && !isSearch);
     navSearch.classList.toggle('act', !isLib && isSearch);
     navLib.classList.toggle('act', isLib);
@@ -867,22 +904,25 @@
 
   function closeLyrics() {
     var lb = q('lyrics-button');
-    if (lb && (lb.getAttribute('data-active') === 'true' || lb.getAttribute('aria-pressed') === 'true')) {
+    if (lb && (lb.getAttribute('data-active') === 'true' ||
+               lb.getAttribute('aria-pressed') === 'true' ||
+               lb.getAttribute('aria-checked') === 'true')) {
       lb.click();
-    } else if (isLyricsPath()) {
+    } else if (isLyricsOpen()) {
       if (window.history.length > 1) window.history.back();
       else press('home-button');
     }
+    html.classList.remove('sm-lyrics');
     setTimeout(updateNavHighlight, 80);
   }
 
   function openQueue() {
     var seq = ++qHarvestSeq;
     panelMode = 'queue';
-    var wasLyrics = isLyricsPath();
+    var wasLyrics = isLyricsOpen();
     if (wasLyrics) closeLyrics();
 
-    html.classList.remove('sm-np', 'sm-lib', 'sm-search', 'sm-qfull', 'sm-qsplit');
+    html.classList.remove('sm-np', 'sm-lib', 'sm-search', 'sm-qfull', 'sm-qsplit', 'sm-lyrics');
     html.classList.add('sm-queue', 'sm-qload');
     updateNavHighlight();
 
@@ -900,7 +940,7 @@
       harvestAndShowSplit(seq);
     }
 
-    if (wasLyrics) setTimeout(launch, 160);
+    if (wasLyrics) setTimeout(launch, 240);
     else launch();
   }
 
@@ -934,9 +974,10 @@
 
     updateNavHighlight();
     syncProfile();
+    if (html.classList.contains('sm-lyrics')) cleanLyricsTopBar();
 
-    // Tampilkan tombol back mengambang di sub-halaman
-    var subPage = !isHomePath() && !isSearchPath();
+    // Tampilkan tombol back mengambang di sub-halaman (bukan Beranda, Cari, atau Lirik)
+    var subPage = !isHomePath() && !isSearchPath() && !isLyricsOpen();
     btnPBack.classList.toggle('show', subPage);
 
     fixFilterBar(document.getElementById('main-view'));
@@ -1135,8 +1176,10 @@
     npDown.setAttribute('aria-label', 'Tutup Pemutar');
     npDown.appendChild(svgIcon(IC.down, 28));
     npCtx = el('div', 'sm-np-ctx', '', 'SEDANG DIPUTAR');
-    npRaw = el('button', 'sm-np-raw', '', 'Asli');
-    npTop.append(npDown, npCtx, npRaw);
+    npMore = el('button', 'sm-np-more');
+    npMore.setAttribute('aria-label', 'Opsi Lainnya');
+    npMore.appendChild(svgIcon(IC.more, 24));
+    npTop.append(npDown, npCtx, npMore);
 
     var npArtWrap = el('div', 'sm-np-artwrap');
     npArt = el('img', 'sm-np-art');
@@ -1228,13 +1271,46 @@
     npBottom.append(npMeta, npProg, npCtl, volWrap, npFoot);
     npEl.append(npTop, npArtWrap, npBottom);
 
+    // Bottom Sheet Opsi Lagu (Titik 3 di Now Playing)
+    sheetBg = el('div', 'sm-sheet-bg');
+    var sheet = el('div', 'sm-sheet');
+    sheet.appendChild(el('div', 'sm-sh-handle'));
+
+    var shHdr = el('div', 'sm-sh-hdr');
+    shArt = el('img', 'sm-sh-art');
+    shArt.alt = '';
+    var shTx = el('div', 'sm-sh-tx');
+    shTitle = el('div', 'sm-sh-t', '', 'Belum ada lagu diputar');
+    shArtist = el('div', 'sm-sh-a', '', '');
+    shTx.append(shTitle, shArtist);
+    shHdr.append(shArt, shTx);
+    sheet.appendChild(shHdr);
+
+    function makeSheetItem(id, iconPath, labelText, extraCls) {
+      var b = el('button', id, 'sm-sh-item' + (extraCls ? ' ' + extraCls : ''));
+      b.append(svgIcon(iconPath, 21), el('span', '', '', labelText));
+      return b;
+    }
+
+    shLikeBtn = makeSheetItem('sm-sh-like', IC.heartOff, 'Tambahkan ke Lagu yang Disukai', '');
+    shLikeLbl = shLikeBtn.querySelector('span');
+    var shPl = makeSheetItem('sm-sh-pl', IC.playlistAdd, 'Tambahkan ke Playlist', '');
+    var shShare = makeSheetItem('sm-sh-share', IC.share, 'Bagikan Link Lagu', '');
+    var shArtBtn = makeSheetItem('sm-sh-artbtn', IC.artist, 'Lihat Artis', '');
+    var shAlbBtn = makeSheetItem('sm-sh-albbtn', IC.album, 'Lihat Album', '');
+    var shNative = makeSheetItem('sm-sh-native', IC.more, 'Opsi Lainnya (Menu Spotify)', '');
+    var shDesktop = makeSheetItem('sm-sh-desk', IC.desktop, 'Tampilan Desktop Asli', 'muted');
+
+    sheet.append(shLikeBtn, shPl, shShare, shArtBtn, shAlbBtn, shNative, shDesktop);
+    sheetBg.appendChild(sheet);
+
     // Floating button to return to Mobile Mode when viewing original Desktop UI
     btnBackMob = el('button', 'sm-back-mob', '', 'Mode Mobile');
 
     // Toast
     toastEl = el('div', 'sm-toast');
 
-    root.append(homeHdr, btnSBack, btnSGo, btnPBack, btnLCls, qHdr, qBg, qSide, miniEl, nav, npEl, toastEl);
+    root.append(homeHdr, btnSBack, btnSGo, btnPBack, btnLCls, qHdr, qBg, qSide, miniEl, nav, npEl, sheetBg, toastEl);
     document.body.append(root, btnBackMob);
 
     // ===== EVENTS =====
@@ -1272,55 +1348,85 @@
       press('control-button-playpause');
     });
 
+    function findAddPlaylistPopover() {
+      var btns = document.querySelectorAll('button');
+      for (var i = btns.length - 1; i >= 0; i--) {
+        var b = btns[i];
+        if (root && root.contains(b)) continue;
+        var tx = (b.textContent || '').trim().toLowerCase();
+        if (tx === 'batal' || tx === 'cancel' || tx === 'selesai' || tx === 'done') {
+          var p = b.parentElement;
+          for (var d = 0; d < 7 && p && p !== document.body; d++) {
+            var low = (p.textContent || '').toLowerCase();
+            if (low.indexOf('lagu yang disukai') > -1 || low.indexOf('liked songs') > -1 ||
+                low.indexOf('tambahkan ke playlist') > -1 || low.indexOf('add to playlist') > -1) {
+              return p;
+            }
+            p = p.parentElement;
+          }
+        }
+      }
+      return null;
+    }
+
     function autoUnlikeFromPopover() {
       var tries = 0;
       function step() {
-        var popovers = document.querySelectorAll('[data-tippy-root], #context-menu, [role="dialog"]');
-        for (var i = 0; i < popovers.length; i++) {
-          var pop = popovers[i];
-          var low = (pop.textContent || '').toLowerCase();
-          if (low.indexOf('lagu yang disukai') === -1 && low.indexOf('liked songs') === -1) continue;
-
+        var pop = findAddPlaylistPopover();
+        if (pop) {
+          pop.classList.add('sm-hide-pop');
           // Cari baris / checkbox "Lagu yang Disukai" atau "Liked Songs" lalu klik untuk hapus centang
           var targetRow = null;
-          var items = pop.querySelectorAll('[role="checkbox"], [aria-checked="true"], input[type="checkbox"], button, [role="option"], li');
+          var items = pop.querySelectorAll('[role="checkbox"], [aria-checked="true"], input[type="checkbox"], button, [role="option"], [role="listitem"], li, div');
           for (var j = 0; j < items.length; j++) {
             var it = items[j];
-            var t = (it.textContent || it.getAttribute('aria-label') || '').toLowerCase();
-            if (t.indexOf('lagu yang disukai') > -1 || t.indexOf('liked songs') > -1) {
-              targetRow = it;
-              break;
+            if (it === pop) continue;
+            var t = (it.textContent || it.getAttribute('aria-label') || '').trim().toLowerCase();
+            if ((t.indexOf('lagu yang disukai') > -1 || t.indexOf('liked songs') > -1) && t.length < 80) {
+              // Pilih elemen yang paling spesifik (punya checkbox atau role atau button atau sedikit anak)
+              if (it.matches('button, li, [role="checkbox"], [role="option"], [role="listitem"], input') ||
+                  it.querySelector('input[type="checkbox"], [role="checkbox"]')) {
+                targetRow = it.querySelector('input[type="checkbox"], [role="checkbox"]') || it;
+                break;
+              }
             }
           }
           if (targetRow) {
             targetRow.click();
             setTimeout(function () {
-              // Klik tombol Selesai / Done / Simpan di dalam popover
               var btns = pop.querySelectorAll('button');
+              var clickedDone = false;
               for (var k = 0; k < btns.length; k++) {
                 var bt = (btns[k].textContent || '').trim().toLowerCase();
-                if (bt === 'selesai' || bt === 'done' || bt === 'simpan' || bt === 'save') {
+                if ((bt === 'selesai' || bt === 'done' || bt === 'simpan' || bt === 'save') && !btns[k].disabled) {
                   btns[k].click();
+                  clickedDone = true;
                   break;
+                }
+              }
+              if (!clickedDone) {
+                for (var k2 = 0; k2 < btns.length; k2++) {
+                  var bt2 = (btns[k2].textContent || '').trim().toLowerCase();
+                  if (bt2 === 'batal' || bt2 === 'cancel') { btns[k2].click(); break; }
                 }
               }
               setTimeout(function () {
                 html.classList.remove('sm-unliking');
                 tick();
-              }, 180);
-            }, 90);
+              }, 200);
+            }, 110);
             return;
           }
         }
-        if (tries < 6) {
+        if (tries < 9) {
           tries++;
-          setTimeout(step, 60);
+          setTimeout(step, 65);
         } else {
           html.classList.remove('sm-unliking');
           tick();
         }
       }
-      setTimeout(step, 60);
+      setTimeout(step, 70);
     }
 
     function toggleLike(ev) {
@@ -1344,7 +1450,143 @@
     npLike.addEventListener('click', toggleLike);
     btnLCls.addEventListener('click', closeLyrics);
 
+    // ===== 3-DOT TRACK OPTIONS SHEET =====
+    function closeSheet() {
+      sheetBg.classList.remove('show');
+    }
+
+    function openSheet() {
+      if (lastArtRaw) { shArt.src = lastArtRaw; shArt.style.visibility = 'visible'; }
+      else { shArt.removeAttribute('src'); shArt.style.visibility = 'hidden'; }
+      shTitle.textContent = lastTitle || 'Belum ada lagu diputar';
+      shArtist.textContent = lastArtist || '';
+      var likedNow = Boolean(lastLiked);
+      shLikeBtn.classList.toggle('accent', likedNow);
+      if (shLikeLbl) shLikeLbl.textContent = likedNow ? 'Hapus dari Lagu yang Disukai' : 'Tambahkan ke Lagu yang Disukai';
+      var oldSvg = shLikeBtn.querySelector('svg');
+      if (oldSvg) shLikeBtn.replaceChild(svgIcon(likedNow ? IC.heartOn : IC.heartOff, 21), oldSvg);
+      sheetBg.classList.add('show');
+    }
+
+    npMore.addEventListener('click', openSheet);
+    sheetBg.addEventListener('click', function (ev) {
+      if (ev.target === sheetBg) closeSheet();
+    });
+
+    shLikeBtn.addEventListener('click', function () {
+      closeSheet();
+      toggleLike();
+    });
+
+    function centerPopoverNode(node) {
+      if (!node) return;
+      var p = node;
+      while (p.parentElement && p.parentElement !== document.body) {
+        var pos = getComputedStyle(p).position;
+        if (pos === 'fixed' || pos === 'absolute' || p.id === 'context-menu' || p.hasAttribute('data-tippy-root')) {
+          p.classList.add('sm-center-pop');
+          return;
+        }
+        p = p.parentElement;
+      }
+      node.classList.add('sm-center-pop');
+    }
+
+    shPl.addEventListener('click', function () {
+      closeSheet();
+      var lb = findLikeButton();
+      if (!lb) {
+        showToast('Putar lagu dulu');
+        return;
+      }
+      var wasLiked = isLiked(lb);
+      lb.click();
+      // Jika lagu belum disukai, klik pertama menambah ke Liked Songs; klik kedua membuka pemilih playlist
+      if (!wasLiked) {
+        setTimeout(function () {
+          var lb2 = findLikeButton();
+          if (lb2) lb2.click();
+          setTimeout(function () { centerPopoverNode(findAddPlaylistPopover()); }, 120);
+          setTimeout(function () { centerPopoverNode(findAddPlaylistPopover()); }, 300);
+        }, 280);
+      } else {
+        setTimeout(function () { centerPopoverNode(findAddPlaylistPopover()); }, 100);
+        setTimeout(function () { centerPopoverNode(findAddPlaylistPopover()); }, 280);
+      }
+    });
+
+    shShare.addEventListener('click', function () {
+      closeSheet();
+      var npb = q('now-playing-bar');
+      var linkEl = (npb && (q('context-item-link', npb) || npb.querySelector('a[href*="/track/"], a[href*="/album/"]'))) || q('context-item-link');
+      var href = linkEl ? linkEl.getAttribute('href') : '';
+      var shareUrl = href ? (href.indexOf('http') === 0 ? href : ('https://open.spotify.com' + href)) : window.location.href;
+      var shareTitle = (lastTitle && lastArtist) ? (lastTitle + ' - ' + lastArtist) : 'Spotify';
+      if (navigator.share) {
+        navigator.share({ title: shareTitle, text: shareTitle, url: shareUrl }).catch(function () {});
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl).then(function () {
+          showToast('Link lagu disalin');
+        }).catch(function () {
+          showToast(shareUrl);
+        });
+      } else {
+        showToast('Link: ' + shareUrl);
+      }
+    });
+
+    shArtBtn.addEventListener('click', function () {
+      closeSheet();
+      var npb = q('now-playing-bar');
+      var artLink = (npb && npb.querySelector('a[href*="/artist/"]')) || document.querySelector('[data-testid="now-playing-widget-v2-byline"] a');
+      if (artLink) {
+        html.classList.remove('sm-np', 'sm-queue', 'sm-lib', 'sm-search');
+        artLink.click();
+        setTimeout(updateNavHighlight, 120);
+      } else {
+        showToast('Halaman artis tidak ditemukan');
+      }
+    });
+
+    shAlbBtn.addEventListener('click', function () {
+      closeSheet();
+      var npb = q('now-playing-bar');
+      var albLink = (npb && (q('context-item-link', npb) || npb.querySelector('a[href*="/album/"], a[href*="/track/"]'))) || q('context-item-link');
+      if (albLink) {
+        html.classList.remove('sm-np', 'sm-queue', 'sm-lib', 'sm-search');
+        albLink.click();
+        setTimeout(updateNavHighlight, 120);
+      } else {
+        showToast('Halaman album tidak ditemukan');
+      }
+    });
+
+    shNative.addEventListener('click', function () {
+      closeSheet();
+      var npb = q('now-playing-bar');
+      var tLink = (npb && q('context-item-link', npb)) || q('context-item-link');
+      if (tLink) {
+        tLink.dispatchEvent(new MouseEvent('contextmenu', {
+          bubbles: true, cancelable: true, button: 2,
+          clientX: Math.round(window.innerWidth / 2),
+          clientY: Math.round(window.innerHeight / 2)
+        }));
+        setTimeout(function () { centerPopoverNode(document.getElementById('context-menu')); }, 80);
+        setTimeout(function () { centerPopoverNode(document.getElementById('context-menu')); }, 240);
+      } else {
+        showToast('Menu opsi Spotify belum tersedia');
+      }
+    });
+
+    shDesktop.addEventListener('click', function () {
+      closeSheet();
+      cfg.enabled = false;
+      applyConfig();
+      try { chrome.storage.local.set({ enabled: false }); } catch (e) {}
+    });
+
     npDown.addEventListener('click', function () {
+      closeSheet();
       html.classList.remove('sm-np');
       volWrap.classList.remove('show');
       updateNavHighlight();
@@ -1358,6 +1600,7 @@
     npArtWrap.addEventListener('touchend', function (ev) {
       if (swipeY0 != null && ev.changedTouches.length === 1) {
         if (ev.changedTouches[0].clientY - swipeY0 > 70) {
+          closeSheet();
           html.classList.remove('sm-np');
           volWrap.classList.remove('show');
           updateNavHighlight();
@@ -1456,8 +1699,11 @@
       html.classList.remove('sm-np', 'sm-lib', 'sm-queue', 'sm-qload', 'sm-qfull', 'sm-qsplit', 'sm-search');
       var tagged = document.querySelectorAll('.sm-qpanel');
       for (var i = 0; i < tagged.length; i++) tagged[i].classList.remove('sm-qpanel');
-      lb.click();
-      updateNavHighlight();
+      if (!isLyricsOpen()) lb.click();
+      html.classList.add('sm-lyrics');
+      html.classList.remove('sm-home');
+      setTimeout(function () { updateNavHighlight(); cleanLyricsTopBar(); }, 100);
+      setTimeout(function () { updateNavHighlight(); cleanLyricsTopBar(); }, 350);
     });
 
     btnQueue.addEventListener('click', openQueue);
@@ -1466,6 +1712,7 @@
 
     // Bottom Navigation
     navHome.addEventListener('click', function () {
+      if (isLyricsOpen()) closeLyrics();
       closeQueue();
       closeOverlays();
       press('home-button');
@@ -1473,11 +1720,13 @@
     });
 
     navSearch.addEventListener('click', function () {
+      if (isLyricsOpen()) closeLyrics();
       closeQueue();
       openSearch();
     });
 
     navLib.addEventListener('click', function () {
+      if (isLyricsOpen()) closeLyrics();
       closeQueue();
       if (html.classList.contains('sm-lib')) {
         html.classList.remove('sm-lib');
@@ -1509,13 +1758,6 @@
     btnPBack.addEventListener('click', function () {
       if (window.history.length > 1) window.history.back();
       else press('home-button');
-    });
-
-    // Toggle Asli / Mode Mobile
-    npRaw.addEventListener('click', function () {
-      cfg.enabled = false;
-      applyConfig();
-      try { chrome.storage.local.set({ enabled: false }); } catch (e) {}
     });
 
     btnBackMob.addEventListener('click', function () {
