@@ -15,9 +15,9 @@ Ekstensi browser Android (**Microsoft Edge Canary**, **Quetta**, **Kiwi**, **Mis
 - **Anti Pinch-Zoom & Pengaturan Skala** — bisa diatur kapan saja lewat popup ekstensi.
 
 ## Download (v1.6.2)
-- **GitHub Releases (disarankan):** https://github.com/PerwiraKusuma111/spotify-mobile-extension/releases/latest
-- **CRX (Edge Canary Android):** https://github.com/PerwiraKusuma111/spotify-mobile-extension/releases/download/v1.6.2/spotify-mobile-ext.crx
-- **ZIP (Quetta / Kiwi / Mises):** https://github.com/PerwiraKusuma111/spotify-mobile-extension/releases/download/v1.6.2/spotify-mobile-ext.zip
+- **GitHub Releases:** https://github.com/PerwiraKusuma111/spotify-mobile-extension/releases/latest
+- **CRX (Edge Canary Android):** https://github.com/PerwiraKusuma111/spotify-mobile-extension/raw/v1.6.2/spotify-mobile-ext.crx
+- **ZIP (Quetta / Kiwi / Mises):** https://github.com/PerwiraKusuma111/spotify-mobile-extension/raw/v1.6.2/spotify-mobile-ext.zip
 
 ## Cara Pasang
 1. **Microsoft Edge Canary Android:** unduh `spotify-mobile-ext.crx`, buka **Extensions** (mode Developer) -> **Install by .crx**, lalu pilih file yang diunduh.
