@@ -526,37 +526,44 @@
       qb.getAttribute('data-active') === 'true';
   }
 
+  var panelMode = 'queue';
+
   function findNPVButton() {
-    var b = q('control-button-npv');
+    var b = q('control-button-npv') || q('now-playing-view-button') || q('npv-button');
     if (b) return b;
     var npb = q('now-playing-bar');
     if (!npb) return null;
+    // 1. Cocokkan aria-label (Bahasa Indonesia & Inggris: "Tampilan Sedang Memutar", "Sekarang memutar", "Now playing view")
     var btns = npb.querySelectorAll('button[aria-label]');
     for (var i = 0; i < btns.length; i++) {
       var lb = (btns[i].getAttribute('aria-label') || '').toLowerCase();
-      if (lb.indexOf('sedang diputar') > -1 || lb.indexOf('now playing') > -1) return btns[i];
+      if ((lb.indexOf('tampilan') > -1 && (lb.indexOf('memutar') > -1 || lb.indexOf('diputar') > -1)) ||
+          lb.indexOf('now playing view') > -1 ||
+          lb.indexOf('sedang memutar') > -1 ||
+          lb.indexOf('sekarang memutar') > -1 ||
+          lb.indexOf('sedang diputar') > -1 ||
+          lb.indexOf('now playing') > -1) {
+        return btns[i];
+      }
+    }
+    // 2. Fallback struktural: tombol tepat di sebelah kiri tombol Lirik atau Antrean di bar bawah kanan Spotify
+    var ref = q('lyrics-button') || findQueueButton();
+    if (ref && ref.previousElementSibling && ref.previousElementSibling.tagName === 'BUTTON') {
+      return ref.previousElementSibling;
     }
     return null;
   }
 
-  function widenPanel(panel) {
-    if (!panel) return;
-    panel.style.setProperty('--panel-width', '100%', 'important');
-    panel.style.setProperty('--right-sidebar-width', '100%', 'important');
-    var els = panel.querySelectorAll('aside, [data-testid="queue-page"], [data-testid="NPV_Panel_OpenDiv"], [style*="width"]');
-    for (var i = 0; i < els.length && i < 30; i++) {
-      var w = els[i].style && els[i].style.width;
-      if (w && /px$/i.test(w) && parseFloat(w) >= 180) {
-        els[i].style.setProperty('width', '100%', 'important');
-        els[i].style.setProperty('max-width', '100%', 'important');
-      }
-    }
-  }
-
   function hasQueueContent(node) {
     if (!node) return false;
-    if (node.querySelector('[data-testid="queue-page"], [data-testid="NPV_Panel_OpenDiv"], [data-testid="lyrics-npv-section"], [data-testid="npv-artist-link"], [data-testid="tracklist-row"], [role="row"], [role="listitem"], a[href*="/track/"], a[href*="/album/"]')) {
-      return true;
+    if (panelMode === 'info') {
+      if (node.querySelector('[data-testid="NPV_Panel_OpenDiv"], [data-testid="lyrics-npv-section"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"], video, canvas')) {
+        return true;
+      }
+    } else {
+      if (node.querySelector('[data-testid="queue-page"], [data-testid="tracklist-row"], [role="row"], [role="listitem"], a[href*="/track/"], a[href*="/album/"]')) {
+        return true;
+      }
     }
     var txt = (node.textContent || '').trim();
     return txt.length > 12;
@@ -566,18 +573,18 @@
     if (!html.classList.contains('sm-queue')) return false;
     var mv = document.getElementById('main-view');
 
-    // 1. Jika Spotify membuka halaman penuh /queue di #main-view, biarkan #main-view menampilkannya
-    if (location.pathname.indexOf('/queue') === 0) {
+    if (panelMode === 'queue' && location.pathname.indexOf('/queue') === 0) {
       var old = document.querySelectorAll('.sm-qpanel');
       for (var i = 0; i < old.length; i++) old[i].classList.remove('sm-qpanel');
       return true;
     }
 
-    // 2. Cari panel antrean / info lagu yang BENAR-BENAR berisi konten
-    var qp = q('queue-page') || q('NPV_Panel_OpenDiv');
-    var sideAside = document.querySelector('aside[aria-label*="Antrean"], aside[aria-label*="Queue"], aside[aria-label*="Sedang diputar"], aside[aria-label*="Now playing"], [role="complementary"]');
+    var primary = (panelMode === 'info')
+      ? (q('NPV_Panel_OpenDiv') || q('lyrics-npv-section') || q('npv-artist-link'))
+      : q('queue-page');
+    var sideAside = document.querySelector('aside[aria-label*="Antrean"], aside[aria-label*="Queue"], aside[aria-label*="memutar"], aside[aria-label*="diputar"], aside[aria-label*="Now playing"], [role="complementary"]');
     var candidates = [
-      qp,
+      primary,
       sideAside,
       document.getElementById('Desktop_PanelContainer_Id'),
       document.querySelector('.Root__right-sidebar'),
@@ -608,7 +615,6 @@
     }
     if (panel && panel !== mv && (!mv || !panel.contains(mv))) {
       panel.classList.add('sm-qpanel');
-      widenPanel(panel);
       return true;
     }
     return false;
@@ -631,20 +637,22 @@
   }
 
   function openQueue() {
+    panelMode = 'queue';
     var qb = findQueueButton();
     if (qTitleEl) qTitleEl.textContent = 'Antrean';
     html.classList.remove('sm-np', 'sm-lib', 'sm-search');
     html.classList.add('sm-queue');
     updateNavHighlight();
 
-    // Klik tombol antrean bawaan Spotify jika antrean belum tampil
+    // Klik tombol antrean bawaan Spotify jika antrean belum aktif
     var already = Boolean(q('queue-page') || location.pathname.indexOf('/queue') === 0);
     if (!already && qb) qb.click();
 
     revealQueuePanel();
     setTimeout(revealQueuePanel, 120);
+    setTimeout(revealQueuePanel, 350);
     setTimeout(function () {
-      if (!html.classList.contains('sm-queue')) return;
+      if (!html.classList.contains('sm-queue') || panelMode !== 'queue') return;
       if (revealQueuePanel()) return;
       try {
         if (location.pathname.indexOf('/queue') !== 0) {
@@ -652,19 +660,14 @@
           window.dispatchEvent(new PopStateEvent('popstate'));
         }
       } catch (e) {}
-      setTimeout(function () {
-        if (!html.classList.contains('sm-queue')) return;
-        if (!revealQueuePanel() && location.pathname.indexOf('/queue') !== 0) {
-          closeQueue();
-          showToast('Antrean tidak tersedia di mode layar ini');
-        }
-      }, 450);
-    }, 420);
+    }, 650);
   }
 
   function openInfo() {
+    panelMode = 'info';
     var npvb = findNPVButton();
-    if (!npvb) {
+    var qb = findQueueButton();
+    if (!npvb && !qb) {
       showToast('Info lagu & Canvas belum tersedia');
       return;
     }
@@ -672,10 +675,20 @@
     html.classList.remove('sm-np', 'sm-lib', 'sm-search');
     html.classList.add('sm-queue');
     updateNavHighlight();
-    if (!isQueueBtnActive(npvb)) npvb.click();
+    if (npvb) {
+      if (qb && isQueueBtnActive(qb)) qb.click();
+      if (!isQueueBtnActive(npvb)) npvb.click();
+    } else if (qb) {
+      // Jika tombol NPV tersembunyi, buka panel kanan lalu tutup tab antrean agar berpindah ke Info/Canvas
+      if (!isQueueBtnActive(qb)) qb.click();
+      setTimeout(function () {
+        var xBtn = document.querySelector('[data-testid="queue-page"] button[aria-label="Tutup"], [data-testid="queue-page"] button[aria-label="Close"]');
+        if (xBtn) xBtn.click();
+      }, 220);
+    }
     revealQueuePanel();
-    setTimeout(revealQueuePanel, 120);
-    setTimeout(revealQueuePanel, 380);
+    setTimeout(revealQueuePanel, 150);
+    setTimeout(revealQueuePanel, 400);
   }
 
   function tick() {

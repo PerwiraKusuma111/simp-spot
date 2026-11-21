@@ -84,7 +84,13 @@ html.sm:not(.sm-queue) #main-view ~ div:has([data-testid="lyrics-npv-section"], 
   display: none !important;
 }
 
-/* Mode Antrean: hanya promosikan panel yang BENAR-BENAR berisi antrean (.sm-qpanel) dengan tinggi eksplisit agar list virtualisasi Spotify tidak kolaps 0px */
+/* Mode Antrean / Info Lagu: gunakan layout yang terbukti jalan tanpa merusak OverlayScrollbars internal Spotify */
+html.sm.sm-queue .Root__top-container,
+html.sm.sm-queue .sm-qpanel {
+  --panel-width: 100vw !important;
+  --right-sidebar-width: 100vw !important;
+}
+
 html.sm.sm-queue .sm-qpanel {
   display: flex !important;
   flex-direction: column !important;
@@ -106,8 +112,6 @@ html.sm.sm-queue .sm-qpanel {
   visibility: visible !important;
   pointer-events: auto !important;
   --content-spacing: 16px !important;
-  --panel-width: 100% !important;
-  --right-sidebar-width: 100% !important;
 }
 
 html.sm.sm-queue .sm-qpanel > * {
@@ -121,34 +125,20 @@ html.sm.sm-queue .sm-qpanel > * {
 }
 
 html.sm.sm-queue .sm-qpanel aside,
-html.sm.sm-queue .sm-qpanel aside > div,
-html.sm.sm-queue .sm-qpanel [data-testid="queue-page"],
-html.sm.sm-queue .sm-qpanel [data-testid="NPV_Panel_OpenDiv"],
-html.sm.sm-queue .sm-qpanel [class*="os-host"],
-html.sm.sm-queue .sm-qpanel [class*="os-viewport"],
-html.sm.sm-queue .sm-qpanel [class*="os-content"] {
+html.sm.sm-queue .sm-qpanel [data-testid="queue-page"] {
+  display: flex !important;
+  flex-direction: column !important;
   width: 100% !important;
-  min-width: 0 !important;
   max-width: 100% !important;
-  --panel-width: 100% !important;
-  --right-sidebar-width: 100% !important;
+  min-height: 100% !important;
+  height: 100% !important;
   visibility: visible !important;
   opacity: 1 !important;
 }
 
-html.sm.sm-queue .sm-qpanel aside,
-html.sm.sm-queue .sm-qpanel [data-testid="queue-page"] {
-  display: flex !important;
-  flex-direction: column !important;
-  min-height: 100% !important;
-  height: 100% !important;
-}
-
-/* Sembunyikan tombol X duplikat bawaan Spotify di dalam panel agar tidak bikin bingung atau loncat ke panel lain */
-html.sm.sm-queue .sm-qpanel button[aria-label="Tutup"],
-html.sm.sm-queue .sm-qpanel button[aria-label="Close"],
-html.sm.sm-queue .sm-qpanel button[aria-label*="Tutup Antrean"],
-html.sm.sm-queue .sm-qpanel button[aria-label*="Close queue"] {
+/* Sembunyikan tombol X duplikat bawaan Spotify di dalam header Antrean */
+html.sm.sm-queue [data-testid="queue-page"] button[aria-label="Tutup"],
+html.sm.sm-queue [data-testid="queue-page"] button[aria-label="Close"] {
   display: none !important;
 }
 
