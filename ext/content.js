@@ -426,10 +426,11 @@
     var isLib = html.classList.contains('sm-lib');
     var isQueue = html.classList.contains('sm-queue');
     var isNP = html.classList.contains('sm-np');
-    var isSearch = html.classList.contains('sm-search') || isSearchPath();
+    var inSearchOverlay = html.classList.contains('sm-search');
+    var isSearch = inSearchOverlay || isSearchPath();
     var onLyrics = isLyricsOpen();
     var onHome = isHomePath();
-    html.classList.toggle('sm-lyrics', Boolean(cfg.enabled && onLyrics && !isLib && !isQueue && !isSearch && !isNP));
+    html.classList.toggle('sm-lyrics', Boolean(cfg.enabled && onLyrics && !isLib && !isQueue && !inSearchOverlay && !isNP));
     html.classList.toggle('sm-home', Boolean(cfg.enabled && onHome && !onLyrics && !isLib && !isQueue && !isSearch && !isNP));
     navHome.classList.toggle('act', !isLib && !isSearch);
     navSearch.classList.toggle('act', !isLib && isSearch);
@@ -1773,25 +1774,37 @@
       setTimeout(function () { updateNavHighlight(); cleanLyricsTopBar(); }, 350);
     });
 
-    // Blokir klik pada semua link artis / judul / kartu Tentang artis di dalam panel Info Lagu
-    // (tombol asli seperti Mengikuti, Like/+, Bagikan, dan scroll tetap bekerja normal)
+    // Blokir klik pada semua link/judul/nama artis/Kredit/Tentang artis di dalam panel Info Lagu
+    // Hanya izinkan tombol kontrol yang memang dipakai (Ikuti, Like/+, Bagikan, Opsi, Lihat lebih banyak)
+    function isAllowedInfoButton(btn) {
+      if (!btn) return false;
+      var tid = (btn.getAttribute('data-testid') || '').toLowerCase();
+      if (tid === 'add-button' || tid === 'follow-button') return true;
+      var txt = (btn.textContent || '').trim().toLowerCase();
+      var lbl = (btn.getAttribute('aria-label') || '').toLowerCase();
+      if (txt === 'ikuti' || txt === 'mengikuti' || txt === 'follow' || txt === 'following' ||
+          txt.indexOf('lihat lebih banyak') > -1 || txt.indexOf('show lyrics') > -1) {
+        return true;
+      }
+      if (lbl.indexOf('tambahkan') > -1 || lbl.indexOf('add to') > -1 || lbl.indexOf('simpan') > -1 ||
+          lbl.indexOf('save') > -1 || lbl.indexOf('suka') > -1 || lbl.indexOf('like') > -1 ||
+          lbl.indexOf('bagikan') > -1 || lbl.indexOf('share') > -1 ||
+          lbl.indexOf('opsi lainnya') > -1 || lbl.indexOf('more options') > -1 ||
+          lbl.indexOf('ikuti') > -1 || lbl.indexOf('follow') > -1) {
+        return true;
+      }
+      return false;
+    }
+
     function blockInfoArtistNav(ev) {
       if (!html.classList.contains('sm-queue')) return;
       var t = ev.target;
       if (!t || !t.closest) return;
       var panel = t.closest('.sm-qpanel');
       if (!panel) return;
-      // Izinkan klik pada tombol kontrol asli (Mengikuti/Ikuti, +, Share, titik tiga, Lihat lebih banyak)
       var btn = t.closest('button');
-      if (btn && !btn.matches('[data-testid="npv-artist-bio-button"]') && !btn.closest('[data-testid="npv-artist-link"]')) {
-        var btxt = (btn.textContent || '').trim().toLowerCase();
-        var blbl = (btn.getAttribute('aria-label') || '').toLowerCase();
-        // Kecuali jika button-nya itu sendiri adalah link/kartu artis (bukan Mengikuti/Like/Share/Lirik)
-        if (blbl.indexOf('artis') === -1 && blbl.indexOf('artist') === -1 && btxt.indexOf('tentang artis') === -1) {
-          return;
-        }
-      }
-      if (t.closest('a, [role="link"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"], [data-testid="context-item-info-artist"], [data-testid="credits-card"]')) {
+      if (btn && isAllowedInfoButton(btn)) return;
+      if (t.closest('a, button, [role="link"], [role="button"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"]')) {
         ev.preventDefault();
         ev.stopPropagation();
         if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
