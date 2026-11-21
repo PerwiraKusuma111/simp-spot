@@ -240,7 +240,14 @@ html.sm [data-testid="user-widget-menu"] {
   pointer-events: auto !important;
 }
 
-/* Mode Cari: tampilkan input pencarian asli Spotify di bagian atas */
+/* Mode Cari: tampilkan input pencarian & dropdown saran asli Spotify mengambang langsung di atas Beranda */
+html.sm.sm-search .Root__globalNav,
+html.sm.sm-search :has(> [data-testid="global-nav-bar"]) {
+  z-index: 2147483002 !important;
+  overflow: visible !important;
+  contain: none !important;
+}
+
 html.sm.sm-search [data-testid="global-nav-bar"] {
   position: fixed !important;
   top: 0 !important;
@@ -258,6 +265,7 @@ html.sm.sm-search [data-testid="global-nav-bar"] {
   align-items: center !important;
   justify-content: stretch !important;
   overflow: visible !important;
+  contain: none !important;
   margin: 0 !important;
   box-sizing: border-box !important;
 }
@@ -274,15 +282,14 @@ html.sm.sm-search [data-testid="global-nav-bar"] > :has([data-testid="search-inp
   min-width: 0 !important;
   display: flex !important;
   align-items: center !important;
-}
-
-html.sm.sm-search [data-testid="global-nav-bar"] > :has([data-testid="search-input"]) > :not(:has([data-testid="search-input"], [role="listbox"], [data-testid="recent-searches-dropdown"])):not([role="listbox"]):not([data-testid="recent-searches-dropdown"]) {
-  display: none !important;
+  overflow: visible !important;
 }
 
 html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="home-button"],
 html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="browse-button"],
-html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="search-icon"] {
+html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="search-icon"],
+html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="clear-button"],
+html.sm.sm-search [data-testid="global-nav-bar"] form[role="search"] div:has([data-testid="browse-button"], [data-testid="clear-button"], [data-testid="search-icon"]):not(:has([data-testid="search-input"], [role="listbox"], [data-testid="recent-searches-dropdown"])) {
   display: none !important;
 }
 
@@ -293,17 +300,19 @@ html.sm.sm-search [data-testid="global-nav-bar"] form[role="search"] > div {
   max-width: 100% !important;
   min-width: 0 !important;
   margin: 0 !important;
+  overflow: visible !important;
 }
 
 html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="search-input"] {
   width: 100% !important;
   min-width: 0 !important;
   padding-left: 14px !important;
-  padding-right: 34px !important;
+  padding-right: 14px !important;
 }
 
 html.sm.sm-search [data-testid="global-nav-bar"] [role="listbox"],
-html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="recent-searches-dropdown"] {
+html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="recent-searches-dropdown"],
+html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="search-dropdown"] {
   width: 100% !important;
   min-width: 100% !important;
   max-width: 100% !important;
@@ -313,7 +322,7 @@ html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="recent-searches-d
   left: 0 !important;
   right: 0 !important;
   box-sizing: border-box !important;
-  z-index: 2147483010 !important;
+  z-index: 2147483015 !important;
   pointer-events: auto !important;
   opacity: 1 !important;
 }
@@ -329,7 +338,7 @@ html.sm.sm-search .sm-sdrop-portal {
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
   transform: none !important;
-  z-index: 2147483010 !important;
+  z-index: 2147483015 !important;
   pointer-events: auto !important;
   opacity: 1 !important;
 }
@@ -680,54 +689,6 @@ html.sm.sm-search #sm-sback {
 
 html.sm.sm-search #sm-sgo.show {
   display: inline-flex;
-}
-
-/* Layar fokus pencarian musik instan (menutupi Beranda tanpa membongkarnya sampai user mengetik) */
-#sm-sveil {
-  display: none;
-  position: fixed;
-  top: calc(56px * var(--sm-k));
-  left: 0;
-  right: 0;
-  bottom: calc(120px * var(--sm-k));
-  background: #121212;
-  z-index: 60;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: calc(24px * var(--sm-k));
-  gap: calc(10px * var(--sm-k));
-  color: #b3b3b3;
-}
-
-html.sm.sm-search:not(.sm-lib):not(.sm-queue):not(.sm-np) #sm-sveil:not(.hide) {
-  display: flex;
-}
-
-#sm-sveil-ic {
-  width: calc(54px * var(--sm-k));
-  height: calc(54px * var(--sm-k));
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.07);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: calc(2px * var(--sm-k));
-}
-
-#sm-sveil-t {
-  font-size: calc(16px * var(--sm-k));
-  font-weight: 800;
-  color: #fff;
-}
-
-#sm-sveil-s {
-  font-size: calc(12.5px * var(--sm-k));
-  color: #9e9e9e;
-  max-width: calc(260px * var(--sm-k));
-  line-height: 1.4;
 }
 
 /* Tombol Back mengambang di sub-halaman (Playlist, Album, Artis) */

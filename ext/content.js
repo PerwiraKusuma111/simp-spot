@@ -337,7 +337,7 @@
   }
 
   // ===== UI STATE & REFS =====
-  var root, homeHdr, btnBrand, btnHSearch, btnProf, btnSBack, btnSGo, sVeil, btnPBack, btnLCls, qHdr, qBg, qSide, qRef, qCls;
+  var root, homeHdr, btnBrand, btnHSearch, btnProf, btnSBack, btnSGo, btnPBack, btnLCls, qHdr, qBg, qSide, qRef, qCls;
   var miniEl, mArt, mTitle, mArtist, mLike, mPP, mPFill;
   var navHome, navLib;
   var npEl, npDown, npMore, npCtx, npArt, npTitle, npArtist, npLike;
@@ -454,20 +454,16 @@
     var inp = q('search-input');
     var hasTxt = Boolean(inp && (inp.value || '').trim());
     if (btnSGo) btnSGo.classList.toggle('show', hasTxt);
-    if (sVeil) {
-      // Sembunyikan layar fokus pencarian begitu Spotify sudah masuk ke hasil pencarian (/search/...)
-      var hasResultRoute = isSearchPath() && (hasTxt || /\/(search|browse)\/.+/i.test(location.pathname || ''));
-      sVeil.classList.toggle('hide', hasResultRoute);
-    }
   }
 
   function pinSearchDropdown() {
     if (!html.classList.contains('sm-search')) return;
     var navb = q('global-nav-bar');
-    var drops = document.querySelectorAll('[data-testid="recent-searches-dropdown"], [data-testid="search-suggestions"], [role="listbox"]');
+    var mv = document.getElementById('main-view');
+    var drops = document.querySelectorAll('[data-testid="recent-searches-dropdown"], [data-testid="search-suggestions"], [data-testid="search-dropdown"], [role="listbox"]');
     for (var i = 0; i < drops.length; i++) {
       var drop = drops[i];
-      if ((root && root.contains(drop)) || (navb && navb.contains(drop))) continue;
+      if ((root && root.contains(drop)) || (navb && navb.contains(drop)) || (mv && mv.contains(drop))) continue;
       var node = drop;
       var pinned = false;
       while (node.parentElement && node.parentElement !== document.body) {
@@ -1743,24 +1739,28 @@
     // Floating button to return to Mobile Mode when viewing original Desktop UI
     btnBackMob = el('button', 'sm-back-mob', '', 'Mode Mobile');
 
-    // Toast, focused Search veil & lightweight transition veil
+    // Toast & lightweight transition veil
     toastEl = el('div', 'sm-toast');
     veilEl = el('div', 'sm-veil');
-    sVeil = el('div', 'sm-sveil');
-    var sVeilIc = el('div', 'sm-sveil-ic');
-    sVeilIc.appendChild(svgIcon(IC.search, 26));
-    sVeil.append(
-      sVeilIc,
-      el('div', 'sm-sveil-t', '', 'Cari musik'),
-      el('div', 'sm-sveil-s', '', 'Ketik judul lagu, artis, atau album di kolom pencarian di atas')
-    );
-    sVeil.addEventListener('click', function () {
-      var inp = q('search-input');
-      if (inp) inp.focus();
-    });
 
-    root.append(homeHdr, btnSBack, btnSGo, sVeil, btnPBack, btnLCls, qHdr, qBg, qSide, veilEl, miniEl, nav, npEl, sheetBg, toastEl);
+    root.append(homeHdr, btnSBack, btnSGo, btnPBack, btnLCls, qHdr, qBg, qSide, veilEl, miniEl, nav, npEl, sheetBg, toastEl);
     document.body.append(root, btnBackMob);
+
+    // Jika sedang membuka kolom cari di atas Beranda lalu tap area Beranda di luar dropdown, tutup kolom cari dengan instan
+    document.addEventListener('pointerdown', function (ev) {
+      if (!html.classList.contains('sm-search') || isSearchPath()) return;
+      var t = ev.target;
+      if (!t || !t.closest) return;
+      if (t.closest('[data-testid="global-nav-bar"], #sm-sback, #sm-sgo, .sm-sdrop-portal, [role="listbox"], [data-testid="recent-searches-dropdown"], [data-testid="search-dropdown"]')) {
+        return;
+      }
+      if (t.closest('#main-view')) {
+        html.classList.remove('sm-search');
+        var inp = q('search-input');
+        if (inp) inp.blur();
+        updateNavHighlight();
+      }
+    }, true);
 
     // ===== EVENTS =====
     btnBrand.addEventListener('click', function () {
