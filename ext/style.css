@@ -84,12 +84,7 @@ html.sm:not(.sm-queue) #main-view ~ div:has([data-testid="lyrics-npv-section"], 
   display: none !important;
 }
 
-/* Mode Antrean: tampilkan panel kanan full-screen (support semua versi container Spotify) */
-html.sm.sm-queue #Desktop_PanelContainer_Id,
-html.sm.sm-queue .Root__right-sidebar,
-html.sm.sm-queue #main-view ~ aside,
-html.sm.sm-queue aside:has([data-testid="queue-page"]),
-html.sm.sm-queue [data-testid="right-sidebar-container"],
+/* Mode Antrean: hanya promosikan panel yang BENAR-BENAR berisi antrean (.sm-qpanel) dengan tinggi eksplisit agar list virtualisasi Spotify tidak kolaps 0px */
 html.sm.sm-queue .sm-qpanel {
   display: flex !important;
   flex-direction: column !important;
@@ -98,10 +93,10 @@ html.sm.sm-queue .sm-qpanel {
   left: 0 !important;
   right: 0 !important;
   bottom: calc(120px * var(--sm-k)) !important;
-  width: auto !important;
-  min-width: 0 !important;
+  width: 100% !important;
+  min-width: 100% !important;
   max-width: 100% !important;
-  height: auto !important;
+  height: calc(100vh - 172px * var(--sm-k)) !important;
   z-index: 2147482988 !important;
   background: #121212 !important;
   overflow-y: auto !important;
@@ -111,18 +106,30 @@ html.sm.sm-queue .sm-qpanel {
   visibility: visible !important;
   pointer-events: auto !important;
   --content-spacing: 16px !important;
+  --panel-width: 100% !important;
+  --right-sidebar-width: 100% !important;
 }
 
-html.sm.sm-queue #Desktop_PanelContainer_Id > *,
-html.sm.sm-queue .Root__right-sidebar > *,
-html.sm.sm-queue #main-view ~ aside > *,
-html.sm.sm-queue aside:has([data-testid="queue-page"]) > *,
-html.sm.sm-queue [data-testid="right-sidebar-container"] > *,
 html.sm.sm-queue .sm-qpanel > * {
   zoom: var(--sm-mz) !important;
+  flex: 1 1 100% !important;
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+html.sm.sm-queue .sm-qpanel aside,
+html.sm.sm-queue .sm-qpanel [data-testid="queue-page"] {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 100% !important;
+  height: 100% !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* Pertahankan now-playing-bar tetap hidup di luar layar agar seek & volume bekerja */

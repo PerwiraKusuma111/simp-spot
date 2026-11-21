@@ -415,10 +415,13 @@
     if (location.pathname.indexOf('/search') !== 0) {
       press('browse-button');
     }
+    // Jangan buka keyboard otomatis saat baru masuk tab Cari
+    var inp = q('search-input');
+    if (inp && document.activeElement === inp) inp.blur();
     setTimeout(function () {
-      var inp = q('search-input');
-      if (inp) { inp.focus(); inp.click(); }
-    }, 60);
+      var i2 = q('search-input');
+      if (i2 && document.activeElement === i2) i2.blur();
+    }, 120);
   }
 
   function isLibraryExpanded(sb) {
@@ -522,19 +525,45 @@
       qb.getAttribute('data-active') === 'true';
   }
 
+  function hasQueueContent(node) {
+    if (!node) return false;
+    if (node.querySelector('[data-testid="queue-page"], [data-testid="tracklist-row"], [role="row"], [role="listitem"], a[href*="/track/"], a[href*="/album/"]')) {
+      return true;
+    }
+    var txt = (node.textContent || '').trim();
+    return txt.length > 12;
+  }
+
   function revealQueuePanel() {
-    if (!html.classList.contains('sm-queue')) return;
+    if (!html.classList.contains('sm-queue')) return false;
     var mv = document.getElementById('main-view');
-    // Jika Spotify membuka halaman /queue langsung di dalam #main-view, biarkan #main-view menampilkannya
-    if (location.pathname.indexOf('/queue') === 0) return;
 
-    var anchor = q('queue-page') ||
-      document.getElementById('Desktop_PanelContainer_Id') ||
-      document.querySelector('.Root__right-sidebar') ||
-      q('right-sidebar-container') ||
-      document.querySelector('aside[aria-label*="Antrean"], aside[aria-label*="Queue"], [role="complementary"]');
+    // 1. Jika Antrean terbuka langsung di dalam #main-view (/queue), jangan tutupi #main-view
+    var qp = q('queue-page');
+    if (location.pathname.indexOf('/queue') === 0 || (qp && mv && mv.contains(qp))) {
+      var old = document.querySelectorAll('.sm-qpanel');
+      for (var i = 0; i < old.length; i++) old[i].classList.remove('sm-qpanel');
+      return true;
+    }
 
-    if (!anchor || (mv && mv.contains(anchor))) return;
+    // 2. Cari panel kanan yang BENAR-BENAR berisi antrean (bukan kontainer kosong!)
+    var candidates = [
+      qp,
+      document.getElementById('Desktop_PanelContainer_Id'),
+      document.querySelector('.Root__right-sidebar'),
+      q('right-sidebar-container'),
+      document.querySelector('aside[aria-label*="Antrean"], aside[aria-label*="Queue"], [role="complementary"]')
+    ];
+    var anchor = null;
+    for (var c = 0; c < candidates.length; c++) {
+      var cand = candidates[c];
+      if (!cand || (mv && mv.contains(cand))) continue;
+      if (hasQueueContent(cand)) {
+        anchor = cand;
+        break;
+      }
+    }
+    if (!anchor) return false;
 
     var panel = anchor;
     while (panel.parentElement && panel.parentElement !== document.body &&
@@ -543,7 +572,9 @@
     }
     if (panel && (!mv || !panel.contains(mv))) {
       panel.classList.add('sm-qpanel');
+      return true;
     }
+    return false;
   }
 
   function closeQueue() {
@@ -562,18 +593,34 @@
 
   function openQueue() {
     var qb = findQueueButton();
-    if (!qb) {
-      showToast('Antrean belum tersedia');
-      return;
-    }
     html.classList.remove('sm-np', 'sm-lib', 'sm-search');
     html.classList.add('sm-queue');
     updateNavHighlight();
-    if (!isQueueBtnActive(qb)) qb.click();
+
+    // Klik tombol antrean bawaan Spotify jika antrean belum tampil
+    var already = Boolean(q('queue-page') || location.pathname.indexOf('/queue') === 0);
+    if (!already && qb) qb.click();
+
     revealQueuePanel();
-    setTimeout(revealQueuePanel, 100);
-    setTimeout(revealQueuePanel, 300);
-    setTimeout(revealQueuePanel, 650);
+    setTimeout(revealQueuePanel, 120);
+    setTimeout(function () {
+      if (!html.classList.contains('sm-queue')) return;
+      if (revealQueuePanel()) return;
+      // Fallback: jika panel kanan Spotify kosong di layar sempit, buka rute SPA /queue langsung di #main-view
+      try {
+        if (location.pathname.indexOf('/queue') !== 0) {
+          window.history.pushState({}, '', '/queue');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }
+      } catch (e) {}
+      setTimeout(function () {
+        if (!html.classList.contains('sm-queue')) return;
+        if (!revealQueuePanel() && location.pathname.indexOf('/queue') !== 0) {
+          closeQueue();
+          showToast('Antrean tidak tersedia di mode layar ini');
+        }
+      }, 450);
+    }, 420);
   }
 
   function tick() {
