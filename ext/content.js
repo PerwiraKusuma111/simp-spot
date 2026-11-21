@@ -286,22 +286,28 @@
     return src.replace('ab67616d00004851', 'ab67616d0000b273');
   }
 
+  var padChecked = typeof WeakSet === 'function' ? new WeakSet() : null;
+
   function fixFilterBar(mv) {
     if (!mv) return;
-    // Kecilkan wrapper desktop yang punya padding kiri-kanan tebal (>=18px) tanpa menambah padding elemen lain
+    // Kecilkan wrapper desktop yang punya padding kiri-kanan tebal (batch READ dulu lalu WRITE agar tidak layout thrashing!)
     var nodes = mv.querySelectorAll('main, section, [role="presentation"], [data-testid="home-page"] > div');
+    var toSlim = [];
     for (var k = 0; k < nodes.length && k < 40; k++) {
       var nd = nodes[k];
-      if (nd.classList.contains('sm-slim') || nd.dataset.smPadChk) continue;
-      nd.dataset.smPadChk = '1';
+      if (nd.classList.contains('sm-slim') || (padChecked && padChecked.has(nd))) continue;
+      if (padChecked) padChecked.add(nd);
       var cs = getComputedStyle(nd);
       var pl = parseFloat(cs.paddingLeft) || 0;
       var pr = parseFloat(cs.paddingRight) || 0;
       if (pl >= 22 && pr >= 22 && nd.offsetWidth > 260) {
-        nd.classList.add('sm-slim');
+        toSlim.push(nd);
       }
     }
-    if (mv.querySelector('.sm-flist')) return;
+    for (var w = 0; w < toSlim.length; w++) {
+      toSlim[w].classList.add('sm-slim');
+    }
+    if (!isHomePath() || mv.querySelector('.sm-flist')) return;
     var btns = mv.querySelectorAll('button');
     for (var i = 0; i < btns.length; i++) {
       var tx = (btns[i].textContent || '').trim().toLowerCase();
@@ -474,15 +480,18 @@
     }
   }
 
+  var goingHomeUntil = 0;
+
   function updateNavHighlight() {
     if (!navHome) return;
     var isLib = html.classList.contains('sm-lib');
     var isQueue = html.classList.contains('sm-queue');
     var isNP = html.classList.contains('sm-np');
     var inSearchOverlay = html.classList.contains('sm-search');
-    var isSearch = inSearchOverlay || isSearchPath();
+    var pendingHome = Date.now() < goingHomeUntil;
+    var isSearch = inSearchOverlay || (!pendingHome && isSearchPath());
     var onLyrics = isLyricsOpen();
-    var onHome = isHomePath();
+    var onHome = pendingHome || isHomePath();
     html.classList.toggle('sm-lyrics', Boolean(cfg.enabled && onLyrics && !isLib && !isQueue && !inSearchOverlay && !isNP));
     html.classList.toggle('sm-home', Boolean(cfg.enabled && onHome && !onLyrics && !isLib && !isQueue && !isSearch && !isNP));
     navHome.classList.toggle('act', !isLib && !isSearch);
@@ -977,6 +986,8 @@
       var b = btns[i];
       if (isExcludedSidebarNode(b)) continue;
       var lb = ((b.getAttribute('aria-label') || '') + ' ' + (b.getAttribute('title') || '')).toLowerCase();
+      if (lb.indexOf('sembunyikan') > -1 || lb.indexOf('tutup') > -1 ||
+          lb.indexOf('hide') > -1 || lb.indexOf('close') > -1) continue;
       if (lb.indexOf('perlihatkan tampilan') > -1 ||
           lb.indexOf('tampilkan tampilan') > -1 ||
           lb.indexOf('buka tampilan') > -1 ||
@@ -992,19 +1003,14 @@
 
   function isNPVExpanded() {
     if (isQueuePanelVisible()) return false;
-    var expArrow = findExpandNPVArrow();
-    if (expArrow) {
-      var ar = expArrow.getBoundingClientRect();
-      if (ar.width > 0 && ar.height > 0) return false;
-    }
     if (!hasRealNPVContent()) return false;
     var rsb = getRightSidebarRoot();
     if (!rsb) return false;
     var target = rsb.querySelector('aside') || rsb;
     var rr = target.getBoundingClientRect();
-    // Jika masih sembunyi / terlipat jadi sliver tipis di pinggir kanan, anggap belum terbuka penuh
-    if (rr.width > 0 && rr.width < 90) return false;
-    if (rr.left > (window.innerWidth || 360) * 0.35) return false;
+    // Terbuka penuh jika lebarnya >= 100px dan menempel di sisi kiri (bukan sliver tipis di kanan > 30% layar)
+    if (rr.width < 100) return false;
+    if (rr.left > (window.innerWidth || 360) * 0.3) return false;
     return true;
   }
 
@@ -1019,22 +1025,21 @@
     return null;
   }
 
-  var lastExpandNPVClickAt = 0;
-  function tryClickExpandNPV(minGapMs) {
-    var now = Date.now();
-    if (now - lastExpandNPVClickAt < (minGapMs || 450)) return false;
-    var exp = findExpandNPVArrow();
-    if (exp) {
-      lastExpandNPVClickAt = now;
-      exp.click();
-      return true;
-    }
-    return false;
-  }
-
   function activateNPVPanel(seq) {
     panelMode = 'info';
     var closedQueueOnce = false;
+    var expandedOnce = false;
+
+    function clickExpandOnce() {
+      if (expandedOnce) return false;
+      var exp = findExpandNPVArrow();
+      if (exp) {
+        expandedOnce = true;
+        exp.click();
+        return true;
+      }
+      return false;
+    }
 
     function pollNPV(step) {
       if (seq !== qHarvestSeq || !html.classList.contains('sm-queue') || panelMode !== 'info') return;
@@ -1056,32 +1061,34 @@
             if (xBtn) xBtn.click();
             else if (qb) qb.click();
           }
-        } else if (!tryClickExpandNPV(300) && npvb && !isQueueBtnActive(npvb)) {
+        } else if (!clickExpandOnce() && npvb && !isQueueBtnActive(npvb)) {
+          expandedOnce = true;
           npvb.click();
         }
-        setTimeout(function () { pollNPV(1); }, 150);
+        setTimeout(function () { pollNPV(1); }, 160);
         return;
       }
 
-      // Jika Antrekan sudah ketutup dan muncul panah kecil '<' "Perlihatkan tampilan Sekarang Memutar", langsung klik otomatis!
-      if (!isQueuePanelVisible()) {
-        tryClickExpandNPV(450);
+      // Setelah Antrekan tertutup, klik panah '<' MAKSIMAL SEKALI saja jika Info Lagu masih terlipat
+      if (!isQueuePanelVisible() && !expandedOnce && step >= 2) {
+        clickExpandOnce();
       }
 
-      // Di step 4 (~600ms), jika masih nyangkut di Antrekan, tutup Antrekan lewat tombol X / qb
+      // Di step 4 (~640ms), jika masih nyangkut di Antrekan, tutup Antrekan lewat tombol X / qb
       if (step === 4 && !closedQueueOnce) {
         closedQueueOnce = true;
         if (isQueuePanelVisible()) {
           var qx = findQueueCloseButton();
           if (qx) qx.click();
           else if (qb) qb.click();
-        } else if (!tryClickExpandNPV(300) && npvb && !isQueueBtnActive(npvb)) {
+        } else if (!expandedOnce && !clickExpandOnce() && npvb && !isQueueBtnActive(npvb)) {
+          expandedOnce = true;
           npvb.click();
         }
       }
 
       if (step < 12) {
-        setTimeout(function () { pollNPV(step + 1); }, 150);
+        setTimeout(function () { pollNPV(step + 1); }, 160);
       } else {
         revealQueuePanel();
         html.classList.remove('sm-qload');
@@ -1260,9 +1267,6 @@
     // Pastikan panel Antrean selalu tampil penuh di atas #main-view saat mode Antrean aktif
     if (html.classList.contains('sm-queue')) {
       revealQueuePanel();
-      if (panelMode === 'info' && !html.classList.contains('sm-qload') && !isQueuePanelVisible()) {
-        tryClickExpandNPV(1500);
-      }
     }
 
     // Auto-tutup overlay Koleksi jika user baru saja membuka playlist/album/artis
@@ -2104,22 +2108,33 @@
 
     // Bottom Navigation
     navHome.addEventListener('click', function () {
+      goingHomeUntil = Date.now() + 700;
       if (isLyricsOpen()) closeLyrics();
-      closeQueue();
-      closeOverlays();
-      press('home-button');
-      updateNavHighlight();
+      if (html.classList.contains('sm-queue')) closeQueue();
+      var inp = q('search-input');
+      if (inp && document.activeElement === inp) inp.blur();
+      html.classList.remove('sm-search', 'sm-lib', 'sm-np', 'sm-lyrics');
+      // Langsung pasang header Beranda & highlight tab agar transisi instan tanpa double-reflow 56px -> 0px -> 50px
+      html.classList.add('sm-home');
+      navHome.classList.add('act');
+      navSearch.classList.remove('act');
+      navLib.classList.remove('act');
+      if (!isHomePath()) {
+        requestAnimationFrame(function () { press('home-button'); });
+      }
     });
 
     navSearch.addEventListener('click', function () {
+      goingHomeUntil = 0;
       if (isLyricsOpen()) closeLyrics();
-      closeQueue();
+      if (html.classList.contains('sm-queue')) closeQueue();
       openSearch();
     });
 
     navLib.addEventListener('click', function () {
+      goingHomeUntil = 0;
       if (isLyricsOpen()) closeLyrics();
-      closeQueue();
+      if (html.classList.contains('sm-queue')) closeQueue();
       if (html.classList.contains('sm-lib')) {
         html.classList.remove('sm-lib');
         updateNavHighlight();

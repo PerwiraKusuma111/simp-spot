@@ -318,7 +318,11 @@ html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="recent-searches-d
 /* Area Konten Utama (#main-view) — padding kiri-kanan seimbang ala HP */
 html.sm,
 html.sm #main-view,
-html.sm #main-view * {
+html.sm #main-view main,
+html.sm #main-view section,
+html.sm #main-view [data-testid="home-page"],
+html.sm #main-view [data-testid="home-page"] > div,
+html.sm #main-view .contentSpacing {
   --content-spacing: 16px !important;
   --encore-layout-margin-tight: 14px !important;
   --encore-layout-margin-base: 16px !important;
