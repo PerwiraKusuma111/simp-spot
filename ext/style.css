@@ -65,7 +65,7 @@ html.sm.sm-lib #Desktop_LeftSidebar_Id {
   overflow-y: auto !important;
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch !important;
-  --content-spacing: 10px !important;
+  --content-spacing: 16px !important;
 }
 
 html.sm.sm-lib #Desktop_LeftSidebar_Id > * {
@@ -76,16 +76,21 @@ html.sm.sm-lib #Desktop_LeftSidebar_Id > * {
 }
 
 /* Sembunyikan panel kanan kecuali saat mode Antrean aktif */
+html.sm:not(.sm-queue) #Desktop_PanelContainer_Id,
+html.sm:not(.sm-queue) .Root__right-sidebar,
 html.sm:not(.sm-queue) #main-view ~ aside,
 html.sm:not(.sm-queue) aside:has([data-testid="lyrics-npv-section"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"], [data-testid="queue-page"]),
-html.sm:not(.sm-queue) #main-view ~ div:has([data-testid="lyrics-npv-section"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"]) {
+html.sm:not(.sm-queue) #main-view ~ div:has([data-testid="lyrics-npv-section"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"], [data-testid="queue-page"]) {
   display: none !important;
 }
 
-/* Mode Antrean: tampilkan panel kanan full-screen */
+/* Mode Antrean: tampilkan panel kanan full-screen (support semua versi container Spotify) */
+html.sm.sm-queue #Desktop_PanelContainer_Id,
+html.sm.sm-queue .Root__right-sidebar,
 html.sm.sm-queue #main-view ~ aside,
 html.sm.sm-queue aside:has([data-testid="queue-page"]),
-html.sm.sm-queue [data-testid="right-sidebar-container"] {
+html.sm.sm-queue [data-testid="right-sidebar-container"],
+html.sm.sm-queue .sm-qpanel {
   display: flex !important;
   flex-direction: column !important;
   position: fixed !important;
@@ -101,13 +106,23 @@ html.sm.sm-queue [data-testid="right-sidebar-container"] {
   background: #121212 !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  --content-spacing: 16px !important;
 }
 
+html.sm.sm-queue #Desktop_PanelContainer_Id > *,
+html.sm.sm-queue .Root__right-sidebar > *,
 html.sm.sm-queue #main-view ~ aside > *,
-html.sm.sm-queue aside:has([data-testid="queue-page"]) > * {
+html.sm.sm-queue aside:has([data-testid="queue-page"]) > *,
+html.sm.sm-queue [data-testid="right-sidebar-container"] > *,
+html.sm.sm-queue .sm-qpanel > * {
   zoom: var(--sm-mz) !important;
   width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
 }
 
 /* Pertahankan now-playing-bar tetap hidup di luar layar agar seek & volume bekerja */
@@ -214,14 +229,14 @@ html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="recent-searches-d
   box-sizing: border-box !important;
 }
 
-/* Area Konten Utama (#main-view) — perkecil padding kiri-kanan biar lega seperti HP */
+/* Area Konten Utama (#main-view) — padding kiri-kanan seimbang ala HP */
 html.sm,
 html.sm #main-view,
 html.sm #main-view * {
-  --content-spacing: 10px !important;
-  --encore-layout-margin-tight: 10px !important;
-  --encore-layout-margin-base: 10px !important;
-  --encore-layout-margin-looser: 12px !important;
+  --content-spacing: 16px !important;
+  --encore-layout-margin-tight: 14px !important;
+  --encore-layout-margin-base: 16px !important;
+  --encore-layout-margin-looser: 18px !important;
 }
 
 html.sm #main-view {
@@ -244,6 +259,10 @@ html.sm.sm-home #main-view {
   top: calc(50px * var(--sm-k)) !important;
 }
 
+html.sm.sm-queue #main-view {
+  top: calc(52px * var(--sm-k)) !important;
+}
+
 html.sm.sm-search #main-view {
   top: calc(56px * var(--sm-k)) !important;
 }
@@ -257,8 +276,8 @@ html.sm #main-view > * {
 html.sm #main-view .contentSpacing,
 html.sm #main-view [class*="contentSpacing"],
 html.sm #main-view .sm-slim {
-  padding-left: 10px !important;
-  padding-right: 10px !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
 }
 
 html.sm #main-view [data-testid="grid-container"] {
@@ -282,8 +301,8 @@ html.sm .sm-fbar {
   top: auto !important;
   z-index: auto !important;
   overflow: visible !important;
-  padding-left: 10px !important;
-  padding-right: 10px !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
 }
 
 html.sm .sm-flist {
@@ -328,7 +347,7 @@ html.sm #sm-root {
   height: calc(50px * var(--sm-k));
   background: #121212;
   z-index: 2147482998;
-  padding: 0 calc(10px * var(--sm-k));
+  padding: 0 calc(16px * var(--sm-k));
   align-items: center;
   justify-content: space-between;
 }

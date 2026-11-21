@@ -250,7 +250,7 @@
       var cs = getComputedStyle(nd);
       var pl = parseFloat(cs.paddingLeft) || 0;
       var pr = parseFloat(cs.paddingRight) || 0;
-      if (pl >= 18 && pr >= 18 && nd.offsetWidth > 260) {
+      if (pl >= 22 && pr >= 22 && nd.offsetWidth > 260) {
         nd.classList.add('sm-slim');
       }
     }
@@ -501,25 +501,79 @@
     setTimeout(ensureLibraryExpanded, 400);
   }
 
-  function closeQueue() {
-    html.classList.remove('sm-queue');
+  function findQueueButton() {
     var qb = q('control-button-queue');
-    if (qb && (qb.getAttribute('aria-pressed') === 'true' || qb.getAttribute('data-active') === 'true')) {
-      qb.click();
+    if (qb) return qb;
+    var npb = q('now-playing-bar');
+    if (!npb) return null;
+    var btns = npb.querySelectorAll('button[aria-label]');
+    for (var i = 0; i < btns.length; i++) {
+      var lb = (btns[i].getAttribute('aria-label') || '').toLowerCase();
+      if (lb.indexOf('antrean') > -1 || lb.indexOf('queue') > -1) return btns[i];
+    }
+    return null;
+  }
+
+  function isQueueBtnActive(qb) {
+    if (!qb) return false;
+    return qb.getAttribute('aria-pressed') === 'true' ||
+      qb.getAttribute('aria-checked') === 'true' ||
+      qb.getAttribute('aria-expanded') === 'true' ||
+      qb.getAttribute('data-active') === 'true';
+  }
+
+  function revealQueuePanel() {
+    if (!html.classList.contains('sm-queue')) return;
+    var mv = document.getElementById('main-view');
+    // Jika Spotify membuka halaman /queue langsung di dalam #main-view, biarkan #main-view menampilkannya
+    if (location.pathname.indexOf('/queue') === 0) return;
+
+    var anchor = q('queue-page') ||
+      document.getElementById('Desktop_PanelContainer_Id') ||
+      document.querySelector('.Root__right-sidebar') ||
+      q('right-sidebar-container') ||
+      document.querySelector('aside[aria-label*="Antrean"], aside[aria-label*="Queue"], [role="complementary"]');
+
+    if (!anchor || (mv && mv.contains(anchor))) return;
+
+    var panel = anchor;
+    while (panel.parentElement && panel.parentElement !== document.body &&
+           (!mv || !panel.parentElement.contains(mv))) {
+      panel = panel.parentElement;
+    }
+    if (panel && (!mv || !panel.contains(mv))) {
+      panel.classList.add('sm-qpanel');
     }
   }
 
+  function closeQueue() {
+    var wasOpen = html.classList.contains('sm-queue');
+    html.classList.remove('sm-queue');
+    var tagged = document.querySelectorAll('.sm-qpanel');
+    for (var i = 0; i < tagged.length; i++) tagged[i].classList.remove('sm-qpanel');
+    if (wasOpen && location.pathname.indexOf('/queue') === 0 && window.history.length > 1) {
+      window.history.back();
+    } else if (wasOpen) {
+      var qb = findQueueButton();
+      if (qb && isQueueBtnActive(qb)) qb.click();
+    }
+    updateNavHighlight();
+  }
+
   function openQueue() {
-    html.classList.remove('sm-np', 'sm-lib', 'sm-search');
-    var qb = q('control-button-queue');
+    var qb = findQueueButton();
     if (!qb) {
       showToast('Antrean belum tersedia');
       return;
     }
-    var active = qb.getAttribute('aria-pressed') === 'true' || qb.getAttribute('data-active') === 'true';
-    if (!active) qb.click();
+    html.classList.remove('sm-np', 'sm-lib', 'sm-search');
     html.classList.add('sm-queue');
     updateNavHighlight();
+    if (!isQueueBtnActive(qb)) qb.click();
+    revealQueuePanel();
+    setTimeout(revealQueuePanel, 100);
+    setTimeout(revealQueuePanel, 300);
+    setTimeout(revealQueuePanel, 650);
   }
 
   function tick() {
@@ -531,6 +585,11 @@
     if (html.classList.contains('sm-lib') && libExpandTries > 0) {
       if (ensureLibraryExpanded()) libExpandTries = 0;
       else libExpandTries--;
+    }
+
+    // Pastikan panel Antrean selalu tampil penuh di atas #main-view saat mode Antrean aktif
+    if (html.classList.contains('sm-queue')) {
+      revealQueuePanel();
     }
 
     // Auto-tutup overlay Koleksi jika user baru saja membuka playlist/album/artis
