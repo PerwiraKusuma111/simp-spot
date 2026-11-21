@@ -1,0 +1,900 @@
+:root {
+  --sm-k: 1;
+  --sm-mz: 1;
+}
+
+html.sm,
+html.sm body {
+  background: #121212 !important;
+  overflow: hidden !important;
+}
+
+html.sm.sm-nozoom,
+html.sm.sm-nozoom body {
+  touch-action: pan-x pan-y !important;
+}
+
+html.sm * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  scrollbar-width: none !important;
+}
+
+html.sm ::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+html.sm .os-scrollbar,
+html.sm .os-scrollbar-track,
+html.sm .os-scrollbar-handle {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* Sembunyikan elemen desktop yang tidak dipakai di mode mobile */
+html.sm [data-testid="footer-div"],
+html.sm [data-testid="language-selection-modal"],
+html.sm [data-testid="LayoutResizer__resize-bar"] {
+  display: none !important;
+}
+
+/* Sembunyikan sidebar kiri kecuali saat tab Koleksi aktif */
+html.sm:not(.sm-lib) #Desktop_LeftSidebar_Id {
+  display: none !important;
+}
+
+/* Tampilkan sidebar kiri sebagai halaman penuh saat tab Koleksi aktif */
+html.sm.sm-lib #Desktop_LeftSidebar_Id {
+  display: flex !important;
+  flex-direction: column !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: calc(122px * var(--sm-k)) !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  z-index: 2147482985 !important;
+  background: #121212 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+html.sm.sm-lib #Desktop_LeftSidebar_Id > * {
+  zoom: var(--sm-mz) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Sembunyikan panel kanan kecuali saat mode Antrean aktif */
+html.sm:not(.sm-queue) #main-view ~ aside,
+html.sm:not(.sm-queue) aside:has([data-testid="lyrics-npv-section"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"], [data-testid="queue-page"]),
+html.sm:not(.sm-queue) #main-view ~ div:has([data-testid="lyrics-npv-section"], [data-testid="npv-artist-link"], [data-testid="npv-artist-bio-button"]) {
+  display: none !important;
+}
+
+/* Mode Antrean: tampilkan panel kanan full-screen */
+html.sm.sm-queue #main-view ~ aside,
+html.sm.sm-queue aside:has([data-testid="queue-page"]),
+html.sm.sm-queue [data-testid="right-sidebar-container"] {
+  display: flex !important;
+  flex-direction: column !important;
+  position: fixed !important;
+  top: calc(52px * var(--sm-k)) !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: calc(122px * var(--sm-k)) !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  z-index: 2147482988 !important;
+  background: #121212 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+html.sm.sm-queue #main-view ~ aside > *,
+html.sm.sm-queue aside:has([data-testid="queue-page"]) > * {
+  zoom: var(--sm-mz) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Pertahankan now-playing-bar tetap hidup di luar layar agar seek & volume bekerja */
+html.sm [data-testid="now-playing-bar"],
+html.sm:not(.sm-search) [data-testid="global-nav-bar"] {
+  position: fixed !important;
+  left: 0 !important;
+  top: -9999px !important;
+  width: 100% !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Mode Cari: tampilkan input pencarian asli Spotify di bagian atas */
+html.sm.sm-search [data-testid="global-nav-bar"] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: auto !important;
+  height: calc(56px * var(--sm-k)) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 2147483002 !important;
+  background: #121212 !important;
+  border-bottom: 1px solid #242424 !important;
+  padding: 0 calc(52px * var(--sm-k)) 0 calc(50px * var(--sm-k)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  overflow: visible !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html.sm.sm-search [data-testid="global-nav-bar"] > :not(:has([data-testid="search-input"])) {
+  display: none !important;
+}
+
+html.sm.sm-search [data-testid="global-nav-bar"] > :has([data-testid="search-input"]) {
+  zoom: var(--sm-mz) !important;
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+html.sm.sm-search [data-testid="global-nav-bar"] > :has([data-testid="search-input"]) > :not(:has([data-testid="search-input"])) {
+  display: none !important;
+}
+
+html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="home-button"],
+html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="browse-button"],
+html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="search-icon"],
+html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="clear-button"] {
+  display: none !important;
+}
+
+html.sm.sm-search [data-testid="global-nav-bar"] form[role="search"],
+html.sm.sm-search [data-testid="global-nav-bar"] form[role="search"] > div {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="search-input"] {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+}
+
+html.sm.sm-search [data-testid="global-nav-bar"] [role="listbox"],
+html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="recent-searches-dropdown"] {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Area Konten Utama (#main-view) */
+html.sm #main-view {
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: calc(122px * var(--sm-k)) !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  z-index: 50 !important;
+  background: #121212 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+html.sm.sm-search #main-view {
+  top: calc(56px * var(--sm-k)) !important;
+}
+
+html.sm #main-view > * {
+  zoom: var(--sm-mz) !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+html.sm #main-view [data-testid="grid-container"] {
+  --column-width: 148px !important;
+  --min-container-width: 0px !important;
+}
+
+html.sm #main-view [data-testid="carousel-scroller"] {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+html.sm #main-view [data-testid="component-shelf"] {
+  content-visibility: auto;
+  contain-intrinsic-size: 230px;
+}
+
+/* Filter pills (Semua/Musik/Podcast) rapi di layar HP */
+html.sm .sm-fbar {
+  position: relative !important;
+  top: auto !important;
+  z-index: auto !important;
+  overflow: visible !important;
+}
+
+html.sm .sm-flist {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: 6px 0 !important;
+  margin: 0 !important;
+}
+
+html.sm .sm-flist button {
+  flex: 0 0 auto !important;
+  border-radius: 999px !important;
+}
+
+/* ===== MOBILE UI CHROME ===== */
+#sm-root,
+#sm-root * {
+  box-sizing: border-box;
+  font-family: var(--encore-body-font-stack, "SpotifyMixUI", "CircularSp", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  -webkit-tap-highlight-color: transparent;
+}
+
+#sm-root {
+  display: none;
+}
+
+html.sm #sm-root {
+  display: block;
+}
+
+/* Tombol Back & Go saat mode Cari */
+#sm-sback,
+#sm-sgo {
+  display: none;
+  position: fixed;
+  top: calc(10px * var(--sm-k));
+  width: calc(36px * var(--sm-k));
+  height: calc(36px * var(--sm-k));
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  z-index: 2147483006;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+#sm-sback {
+  left: calc(8px * var(--sm-k));
+  background: #282828;
+  color: #fff;
+}
+
+#sm-sgo {
+  right: calc(8px * var(--sm-k));
+  background: #1db954;
+  color: #000;
+}
+
+html.sm.sm-search #sm-sback {
+  display: inline-flex;
+}
+
+html.sm.sm-search #sm-sgo.show {
+  display: inline-flex;
+}
+
+/* Tombol Back mengambang di sub-halaman (Playlist, Album, Artis, Lirik) */
+#sm-pback {
+  display: none;
+  position: fixed;
+  top: calc(10px * var(--sm-k));
+  left: calc(10px * var(--sm-k));
+  width: calc(36px * var(--sm-k));
+  height: calc(36px * var(--sm-k));
+  border: 0;
+  border-radius: 50%;
+  background: rgba(18, 18, 18, 0.78);
+  color: #fff;
+  z-index: 2147482995;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+html.sm:not(.sm-search):not(.sm-lib):not(.sm-queue):not(.sm-np) #sm-pback.show {
+  display: inline-flex;
+}
+
+/* Header overlay Antrean */
+#sm-qhdr {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(52px * var(--sm-k));
+  background: #121212;
+  border-bottom: 1px solid #242424;
+  z-index: 2147482996;
+  padding: 0 calc(14px * var(--sm-k));
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+  font-size: calc(16px * var(--sm-k));
+  font-weight: 700;
+}
+
+html.sm.sm-queue #sm-qhdr {
+  display: flex;
+}
+
+#sm-qcls {
+  width: calc(34px * var(--sm-k));
+  height: calc(34px * var(--sm-k));
+  border: 0;
+  border-radius: 50%;
+  background: #282828;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ===== FLOATING MINI PLAYER (SPOTIFY MOBILE STYLE) ===== */
+#sm-mini {
+  position: fixed;
+  left: calc(8px * var(--sm-k));
+  right: calc(8px * var(--sm-k));
+  bottom: calc(60px * var(--sm-k));
+  height: calc(58px * var(--sm-k));
+  background: #282828;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: calc(8px * var(--sm-k));
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  gap: calc(10px * var(--sm-k));
+  padding: 0 calc(10px * var(--sm-k)) calc(2px * var(--sm-k)) calc(8px * var(--sm-k));
+  color: #fff;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 calc(4px * var(--sm-k)) calc(14px * var(--sm-k)) rgba(0, 0, 0, 0.45);
+}
+
+#sm-m-art {
+  width: calc(42px * var(--sm-k));
+  height: calc(42px * var(--sm-k));
+  border-radius: calc(5px * var(--sm-k));
+  background: #3a3a3a;
+  object-fit: cover;
+  flex: none;
+}
+
+#sm-m-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(2px * var(--sm-k));
+}
+
+#sm-m-title {
+  font-size: calc(13.5px * var(--sm-k));
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+#sm-m-artist {
+  font-size: calc(12px * var(--sm-k));
+  color: #b3b3b3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+#sm-m-acts {
+  display: flex;
+  align-items: center;
+  gap: calc(4px * var(--sm-k));
+  flex: none;
+}
+
+#sm-m-acts button {
+  width: calc(36px * var(--sm-k));
+  height: calc(36px * var(--sm-k));
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+#sm-m-like.liked {
+  color: #1db954;
+}
+
+#sm-m-pwrap {
+  position: absolute;
+  left: calc(8px * var(--sm-k));
+  right: calc(8px * var(--sm-k));
+  bottom: 0;
+  height: calc(2.5px * var(--sm-k));
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+#sm-m-pfill {
+  height: 100%;
+  width: 0%;
+  background: #fff;
+}
+
+/* ===== BOTTOM NAVIGATION BAR (SPOTIFY ANDROID STYLE) ===== */
+#sm-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(56px * var(--sm-k));
+  background: linear-gradient(180deg, rgba(18, 18, 18, 0.96) 0%, #0d0d0d 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  z-index: 2147483001;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 calc(6px * var(--sm-k));
+}
+
+.sm-nbtn {
+  flex: 1;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: #a7a7a7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(3px * var(--sm-k));
+  padding: 0;
+  cursor: pointer;
+  font-size: calc(10.5px * var(--sm-k));
+  font-weight: 600;
+}
+
+.sm-nbtn.act {
+  color: #fff;
+}
+
+/* ===== FULL-SCREEN NOW PLAYING SHEET ===== */
+#sm-np {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483020;
+  background: linear-gradient(180deg, #323232 0%, #161616 55%, #0c0c0c 100%);
+  color: #fff;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: calc(14px * var(--sm-k)) calc(22px * var(--sm-k)) calc(22px * var(--sm-k));
+  overflow-y: auto;
+}
+
+html.sm.sm-np #sm-np {
+  display: flex;
+}
+
+#sm-np-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(10px * var(--sm-k));
+  flex: none;
+}
+
+#sm-np-down,
+#sm-np-raw {
+  height: calc(36px * var(--sm-k));
+  border: 0;
+  background: transparent;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+#sm-np-down {
+  width: calc(36px * var(--sm-k));
+}
+
+#sm-np-raw {
+  padding: 0 calc(10px * var(--sm-k));
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: calc(11.5px * var(--sm-k));
+  font-weight: 600;
+}
+
+#sm-np-ctx {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: calc(11.5px * var(--sm-k));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d4d4d4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#sm-np-artwrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(14px * var(--sm-k)) 0;
+}
+
+#sm-np-art {
+  width: min(84vw, calc(330px * var(--sm-k)));
+  max-height: 44vh;
+  aspect-ratio: 1 / 1;
+  border-radius: calc(10px * var(--sm-k));
+  object-fit: cover;
+  background: #282828;
+  box-shadow: 0 calc(14px * var(--sm-k)) calc(34px * var(--sm-k)) rgba(0, 0, 0, 0.55);
+}
+
+#sm-np-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12px * var(--sm-k));
+  margin-bottom: calc(10px * var(--sm-k));
+}
+
+#sm-np-tx {
+  flex: 1;
+  min-width: 0;
+}
+
+#sm-np-title {
+  font-size: calc(21px * var(--sm-k));
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#sm-np-artist {
+  font-size: calc(14.5px * var(--sm-k));
+  color: #b3b3b3;
+  margin-top: calc(2px * var(--sm-k));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#sm-np-like {
+  width: calc(40px * var(--sm-k));
+  height: calc(40px * var(--sm-k));
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #b3b3b3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+#sm-np-like.liked {
+  color: #1db954;
+}
+
+/* Interactive Progress Slider */
+#sm-np-prog {
+  margin-bottom: calc(10px * var(--sm-k));
+}
+
+#sm-np-sbar {
+  position: relative;
+  width: 100%;
+  height: calc(32px * var(--sm-k));
+  display: flex;
+  align-items: center;
+  touch-action: none;
+  cursor: pointer;
+}
+
+#sm-np-strack {
+  position: relative;
+  width: 100%;
+  height: calc(4px * var(--sm-k));
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.24);
+}
+
+#sm-np-sfill {
+  position: relative;
+  height: 100%;
+  width: 0%;
+  border-radius: 99px;
+  background: #fff;
+}
+
+#sm-np-sbar.dragging #sm-np-sfill {
+  background: #1db954;
+}
+
+#sm-np-sknob {
+  position: absolute;
+  right: calc(-6.5px * var(--sm-k));
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(13px * var(--sm-k));
+  height: calc(13px * var(--sm-k));
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 calc(1px * var(--sm-k)) calc(4px * var(--sm-k)) rgba(0, 0, 0, 0.5);
+}
+
+#sm-np-sbar.dragging #sm-np-sknob {
+  width: calc(16px * var(--sm-k));
+  height: calc(16px * var(--sm-k));
+  right: calc(-8px * var(--sm-k));
+}
+
+#sm-np-times {
+  display: flex;
+  justify-content: space-between;
+  font-size: calc(11.5px * var(--sm-k));
+  color: #b3b3b3;
+  font-variant-numeric: tabular-nums;
+  margin-top: calc(-2px * var(--sm-k));
+}
+
+/* Main 5-Button Playback Row */
+#sm-np-ctl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: calc(6px * var(--sm-k)) 0 calc(14px * var(--sm-k));
+}
+
+#sm-np-ctl button {
+  position: relative;
+  width: calc(44px * var(--sm-k));
+  height: calc(44px * var(--sm-k));
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+#sm-np-ctl button.sub {
+  color: #b3b3b3;
+}
+
+#sm-np-ctl button.on {
+  color: #1db954;
+}
+
+#sm-np-ctl button.on::after {
+  content: '';
+  position: absolute;
+  bottom: calc(3px * var(--sm-k));
+  width: calc(4px * var(--sm-k));
+  height: calc(4px * var(--sm-k));
+  border-radius: 50%;
+  background: #1db954;
+}
+
+#sm-np-rep.one::before {
+  content: '1';
+  position: absolute;
+  top: calc(5px * var(--sm-k));
+  right: calc(5px * var(--sm-k));
+  font-size: calc(9px * var(--sm-k));
+  font-weight: 800;
+  color: #1db954;
+}
+
+#sm-np-pp {
+  width: calc(64px * var(--sm-k)) !important;
+  height: calc(64px * var(--sm-k)) !important;
+  background: #fff !important;
+  color: #000 !important;
+}
+
+/* Volume Drawer inside Now Playing */
+#sm-vol-wrap {
+  display: none;
+  align-items: center;
+  gap: calc(10px * var(--sm-k));
+  padding: calc(6px * var(--sm-k)) calc(12px * var(--sm-k));
+  margin-bottom: calc(10px * var(--sm-k));
+  border-radius: calc(10px * var(--sm-k));
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#sm-vol-wrap.show {
+  display: flex;
+}
+
+#sm-vol-bar {
+  position: relative;
+  flex: 1;
+  height: calc(28px * var(--sm-k));
+  display: flex;
+  align-items: center;
+  touch-action: none;
+  cursor: pointer;
+}
+
+#sm-vol-track {
+  position: relative;
+  width: 100%;
+  height: calc(4px * var(--sm-k));
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+#sm-vol-fill {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  border-radius: 99px;
+  background: #1db954;
+}
+
+#sm-vol-knob {
+  position: absolute;
+  right: calc(-6px * var(--sm-k));
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(12px * var(--sm-k));
+  height: calc(12px * var(--sm-k));
+  border-radius: 50%;
+  background: #fff;
+}
+
+#sm-vol-pct {
+  font-size: calc(11.5px * var(--sm-k));
+  color: #d4d4d4;
+  min-width: calc(34px * var(--sm-k));
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bottom Actions Row (Volume, Lirik, Antrean) */
+#sm-np-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(10px * var(--sm-k));
+}
+
+#sm-np-foot button {
+  flex: 1;
+  height: calc(38px * var(--sm-k));
+  border: 0;
+  border-radius: calc(999px * var(--sm-k));
+  background: rgba(255, 255, 255, 0.09);
+  color: #e5e5e5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6px * var(--sm-k));
+  font-size: calc(12px * var(--sm-k));
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 calc(10px * var(--sm-k));
+}
+
+#sm-np-foot button.on {
+  background: rgba(29, 185, 84, 0.2);
+  color: #1db954;
+}
+
+/* Tombol kembali ke Mode Mobile saat sedang di mode Asli */
+#sm-back-mob {
+  display: none;
+  position: fixed;
+  right: calc(10px * var(--sm-k));
+  bottom: calc(10px * var(--sm-k));
+  z-index: 2147483030;
+  border: 0;
+  border-radius: 999px;
+  background: #1db954;
+  color: #000;
+  font-size: calc(12.5px * var(--sm-k));
+  font-weight: 800;
+  padding: calc(8px * var(--sm-k)) calc(14px * var(--sm-k));
+  cursor: pointer;
+  box-shadow: 0 calc(3px * var(--sm-k)) calc(12px * var(--sm-k)) rgba(0, 0, 0, 0.45);
+}
+
+html.sm-off-btn #sm-back-mob {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Toast notifikasi ringan */
+#sm-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(134px * var(--sm-k));
+  transform: translateX(-50%);
+  background: rgba(36, 36, 36, 0.95);
+  color: #fff;
+  font-size: calc(12.5px * var(--sm-k));
+  font-weight: 600;
+  padding: calc(8px * var(--sm-k)) calc(14px * var(--sm-k));
+  border-radius: 999px;
+  z-index: 2147483040;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+}
+
+#sm-toast.show {
+  opacity: 1;
+}

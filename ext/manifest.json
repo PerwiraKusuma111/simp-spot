@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Spotify Mobile Mode",
+  "version": "1.0.0",
+  "description": "Ubah tampilan Spotify Web Desktop jadi mirip aplikasi Spotify Mobile lengkap dengan slider lagu, Now Playing fullscreen, navigasi bawah, cari, koleksi, lirik, dan antrean",
+  "permissions": [
+    "storage",
+    "tabs",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "https://open.spotify.com/*",
+    "https://*.spotify.com/*"
+  ],
+  "background": {
+    "service_worker": "bg.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Spotify Mobile Mode",
+    "default_icon": {
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://open.spotify.com/*"],
+      "css": ["style.css"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
