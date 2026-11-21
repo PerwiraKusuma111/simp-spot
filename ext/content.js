@@ -337,9 +337,9 @@
   }
 
   // ===== UI STATE & REFS =====
-  var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, sVeil, btnPBack, btnLCls, qHdr, qBg, qSide, qRef, qCls;
+  var root, homeHdr, btnBrand, btnHSearch, btnProf, btnSBack, btnSGo, sVeil, btnPBack, btnLCls, qHdr, qBg, qSide, qRef, qCls;
   var miniEl, mArt, mTitle, mArtist, mLike, mPP, mPFill;
-  var navHome, navSearch, navLib;
+  var navHome, navLib;
   var npEl, npDown, npMore, npCtx, npArt, npTitle, npArtist, npLike;
   var npSBar, npSFill, npCurTm, npDurTm;
   var npShuf, npPrev, npPP, npNext, npRep;
@@ -461,14 +461,42 @@
     }
   }
 
+  function pinSearchDropdown() {
+    if (!html.classList.contains('sm-search')) return;
+    var navb = q('global-nav-bar');
+    var drops = document.querySelectorAll('[data-testid="recent-searches-dropdown"], [data-testid="search-suggestions"], [role="listbox"]');
+    for (var i = 0; i < drops.length; i++) {
+      var drop = drops[i];
+      if ((root && root.contains(drop)) || (navb && navb.contains(drop))) continue;
+      var node = drop;
+      var pinned = false;
+      while (node.parentElement && node.parentElement !== document.body) {
+        var pos = getComputedStyle(node).position;
+        if (pos === 'fixed' || pos === 'absolute' || node.id === 'context-menu' ||
+            node.hasAttribute('data-tippy-root') || node.hasAttribute('data-floating-ui-portal')) {
+          node.classList.add('sm-sdrop-portal');
+          pinned = true;
+          break;
+        }
+        node = node.parentElement;
+      }
+      if (!pinned) drop.classList.add('sm-sdrop-portal');
+    }
+  }
+
   function bindSearchInput() {
     var inp = q('search-input');
     if (!inp || inp._smBound) return;
     inp._smBound = 1;
-    inp.addEventListener('input', function () {
+    function onSearchActivity() {
       syncSearchGo();
-      setTimeout(syncSearchGo, 120);
-    });
+      pinSearchDropdown();
+      setTimeout(function () { syncSearchGo(); pinSearchDropdown(); }, 120);
+      setTimeout(pinSearchDropdown, 320);
+    }
+    inp.addEventListener('input', onSearchActivity);
+    inp.addEventListener('focus', onSearchActivity);
+    inp.addEventListener('click', onSearchActivity);
     inp.addEventListener('keydown', function (ev) {
       if (ev.key === 'Enter') {
         setTimeout(function () { if (inp) inp.blur(); syncSearchGo(); }, 100);
@@ -589,8 +617,7 @@
     var onHome = pendingHome || isHomePath();
     html.classList.toggle('sm-lyrics', Boolean(cfg.enabled && onLyrics && !isLib && !isQueue && !inSearchOverlay && !isNP));
     html.classList.toggle('sm-home', Boolean(cfg.enabled && onHome && !onLyrics && !isLib && !isQueue && !isSearch && !isNP));
-    navHome.classList.toggle('act', !isLib && !isSearch);
-    navSearch.classList.toggle('act', !isLib && isSearch);
+    navHome.classList.toggle('act', !isLib);
     navLib.classList.toggle('act', isLib);
   }
 
@@ -655,18 +682,21 @@
   }
 
   function openSearch() {
-    html.classList.remove('sm-lib', 'sm-queue', 'sm-qload', 'sm-qfull', 'sm-qsplit', 'sm-np');
+    goingHomeUntil = 0;
+    html.classList.remove('sm-lib', 'sm-queue', 'sm-qload', 'sm-qfull', 'sm-qsplit', 'sm-np', 'sm-home');
     html.classList.add('sm-search');
     bindSearchInput();
     syncSearchGo();
     updateNavHighlight();
-    // Tidak pindah ke /browse dulu agar Beranda tetap utuh di belakang -> pindah Cari <-> Beranda 100% instan 0ms!
+    // Fokuskan input pencarian asli Spotify agar saran pencarian & riwayat langsung muncul rapi
     var inp = q('search-input');
-    if (inp && document.activeElement === inp) inp.blur();
-    setTimeout(function () {
-      var i2 = q('search-input');
-      if (i2 && document.activeElement === i2) i2.blur();
-    }, 120);
+    if (inp) {
+      inp.focus();
+      inp.click();
+    }
+    setTimeout(pinSearchDropdown, 50);
+    setTimeout(pinSearchDropdown, 180);
+    setTimeout(pinSearchDropdown, 380);
   }
 
   function isLibraryExpanded(sb) {
@@ -1385,7 +1415,10 @@
     fixFilterBar(document.getElementById('main-view'));
     if (isHomePath()) ensureHomeBrowseShelf();
     bindSearchInput();
-    if (html.classList.contains('sm-search')) syncSearchGo();
+    if (html.classList.contains('sm-search')) {
+      syncSearchGo();
+      pinSearchDropdown();
+    }
 
     // Sync info lagu dari now-playing-bar asli Spotify
     var npb = q('now-playing-bar');
@@ -1487,13 +1520,16 @@
 
     root = el('div', 'sm-root');
 
-    // Home Top Header (Spotify title + Profile / Masuk)
+    // Home Top Header (Spotify title + Search pill + Profile / Masuk)
     homeHdr = el('header', 'sm-home-hdr');
     btnBrand = el('button', 'sm-brand', '', 'Spotify');
     btnBrand.setAttribute('aria-label', 'Beranda Spotify');
+    btnHSearch = el('button', 'sm-hsearch');
+    btnHSearch.setAttribute('aria-label', 'Cari lagu');
+    btnHSearch.append(svgIcon(IC.search, 16), el('span', '', '', 'Cari lagu...'));
     btnProf = el('button', 'sm-prof', 'login', 'Masuk');
     btnProf.setAttribute('aria-label', 'Masuk');
-    homeHdr.append(btnBrand, btnProf);
+    homeHdr.append(btnBrand, btnHSearch, btnProf);
 
     // Search top buttons
     btnSBack = el('button', 'sm-sback');
@@ -1558,18 +1594,15 @@
 
     miniEl.append(mArt, mInfo, mActs, mPWrap);
 
-    // ===== BOTTOM NAV BAR =====
+    // ===== BOTTOM NAV BAR (2 tab instan: Beranda & Koleksi) =====
     var nav = el('nav', 'sm-nav');
     navHome = el('button', 'sm-nav-home', 'sm-nbtn act');
     navHome.append(svgIcon(IC.home, 23), el('span', '', '', 'Beranda'));
 
-    navSearch = el('button', 'sm-nav-search', 'sm-nbtn');
-    navSearch.append(svgIcon(IC.search, 23), el('span', '', '', 'Cari'));
-
     navLib = el('button', 'sm-nav-lib', 'sm-nbtn');
     navLib.append(svgIcon(IC.library, 23), el('span', '', '', 'Koleksi'));
 
-    nav.append(navHome, navSearch, navLib);
+    nav.append(navHome, navLib);
 
     // ===== FULL-SCREEN NOW PLAYING SHEET =====
     npEl = el('div', 'sm-np');
@@ -1734,6 +1767,12 @@
       var mv = document.getElementById('main-view');
       if (mv) mv.scrollTo({ top: 0, behavior: 'smooth' });
       press('home-button');
+    });
+
+    btnHSearch.addEventListener('click', function () {
+      if (html.classList.contains('sm-lyrics')) closeLyrics();
+      if (html.classList.contains('sm-queue')) closeQueue();
+      openSearch();
     });
 
     btnProf.addEventListener('click', function () {
@@ -2212,7 +2251,7 @@
     qRef.addEventListener('click', openQueue);
     qCls.addEventListener('click', closeQueue);
 
-    // Bottom Navigation
+    // Bottom Navigation (Beranda & Koleksi)
     navHome.addEventListener('click', function () {
       goingHomeUntil = Date.now() + 700;
       if (html.classList.contains('sm-lyrics')) closeLyrics();
@@ -2223,20 +2262,12 @@
       // Langsung pasang header Beranda & highlight tab agar transisi instan tanpa double-reflow 56px -> 0px -> 50px
       html.classList.add('sm-home');
       navHome.classList.add('act');
-      navSearch.classList.remove('act');
       navLib.classList.remove('act');
       if (!isHomePath()) {
         requestAnimationFrame(function () {
           setTimeout(function () { press('home-button'); }, 0);
         });
       }
-    });
-
-    navSearch.addEventListener('click', function () {
-      goingHomeUntil = 0;
-      if (html.classList.contains('sm-lyrics')) closeLyrics();
-      if (html.classList.contains('sm-queue')) closeQueue();
-      openSearch();
     });
 
     navLib.addEventListener('click', function () {
@@ -2260,7 +2291,6 @@
         goingHomeUntil = Date.now() + 700;
         html.classList.add('sm-home');
         navHome.classList.add('act');
-        navSearch.classList.remove('act');
         navLib.classList.remove('act');
         requestAnimationFrame(function () {
           setTimeout(function () { press('home-button'); }, 0);

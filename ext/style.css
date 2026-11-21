@@ -276,14 +276,13 @@ html.sm.sm-search [data-testid="global-nav-bar"] > :has([data-testid="search-inp
   align-items: center !important;
 }
 
-html.sm.sm-search [data-testid="global-nav-bar"] > :has([data-testid="search-input"]) > :not(:has([data-testid="search-input"])) {
+html.sm.sm-search [data-testid="global-nav-bar"] > :has([data-testid="search-input"]) > :not(:has([data-testid="search-input"], [role="listbox"], [data-testid="recent-searches-dropdown"])):not([role="listbox"]):not([data-testid="recent-searches-dropdown"]) {
   display: none !important;
 }
 
 html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="home-button"],
 html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="browse-button"],
-html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="search-icon"],
-html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="clear-button"] {
+html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="search-icon"] {
   display: none !important;
 }
 
@@ -300,7 +299,7 @@ html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="search-input"] {
   width: 100% !important;
   min-width: 0 !important;
   padding-left: 14px !important;
-  padding-right: 14px !important;
+  padding-right: 34px !important;
 }
 
 html.sm.sm-search [data-testid="global-nav-bar"] [role="listbox"],
@@ -308,9 +307,37 @@ html.sm.sm-search [data-testid="global-nav-bar"] [data-testid="recent-searches-d
   width: 100% !important;
   min-width: 100% !important;
   max-width: 100% !important;
+  max-height: calc(60vh / var(--sm-mz)) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
   left: 0 !important;
   right: 0 !important;
   box-sizing: border-box !important;
+  z-index: 2147483010 !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
+
+html.sm.sm-search .sm-sdrop-portal {
+  position: fixed !important;
+  top: calc(58px * var(--sm-k)) !important;
+  left: calc(10px * var(--sm-k)) !important;
+  right: calc(10px * var(--sm-k)) !important;
+  width: auto !important;
+  max-width: calc(100vw - 20px * var(--sm-k)) !important;
+  max-height: calc(100vh - 190px * var(--sm-k)) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  transform: none !important;
+  z-index: 2147483010 !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
+
+html.sm.sm-search .sm-sdrop-portal > * {
+  zoom: var(--sm-mz) !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 /* Area Konten Utama (#main-view) — padding kiri-kanan seimbang ala HP */
@@ -515,7 +542,7 @@ html.sm #sm-root {
   display: block;
 }
 
-/* Header Beranda: Judul Spotify kiri atas + Profil / Masuk kanan atas */
+/* Header Beranda: Judul Spotify kiri atas + Kolom Cari tengah/kanan + Profil / Masuk kanan atas */
 #sm-home-hdr {
   display: none;
   position: fixed;
@@ -525,7 +552,8 @@ html.sm #sm-root {
   height: calc(50px * var(--sm-k));
   background: #121212;
   z-index: 2147482998;
-  padding: 0 calc(16px * var(--sm-k));
+  padding: 0 calc(14px * var(--sm-k));
+  gap: calc(10px * var(--sm-k));
   align-items: center;
   justify-content: space-between;
 }
@@ -541,11 +569,41 @@ html.sm.sm-home:not(.sm-search):not(.sm-lib):not(.sm-queue):not(.sm-np) #sm-home
   padding: 0;
   margin: 0;
   cursor: pointer;
+  flex: none;
   font-family: var(--encore-title-font-stack, var(--encore-body-font-stack, "SpotifyMixUITitle", "CircularSpTitle", "CircularSp", sans-serif));
-  font-size: calc(25px * var(--sm-k));
+  font-size: calc(23px * var(--sm-k));
   font-weight: 900;
   letter-spacing: -0.045em;
   line-height: 1;
+}
+
+#sm-hsearch {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: calc(34px * var(--sm-k));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: #242424;
+  color: #a7a7a7;
+  padding: 0 calc(12px * var(--sm-k));
+  display: inline-flex;
+  align-items: center;
+  gap: calc(7px * var(--sm-k));
+  font-size: calc(13px * var(--sm-k));
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+#sm-hsearch:active {
+  background: #2e2e2e;
+}
+
+#sm-hsearch span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #sm-prof {
@@ -633,7 +691,7 @@ html.sm.sm-search #sm-sgo.show {
   right: 0;
   bottom: calc(120px * var(--sm-k));
   background: #121212;
-  z-index: 2147482984;
+  z-index: 60;
   flex-direction: column;
   align-items: center;
   justify-content: center;
