@@ -936,17 +936,45 @@
     return btn;
   }
 
+  function isQueuePanelVisible() {
+    if (q('queue-page')) return true;
+    var qb = findQueueButton();
+    if (qb && isQueueBtnActive(qb)) return true;
+    var rsb = getRightSidebarRoot();
+    if (!rsb) return false;
+    var txt = (rsb.textContent || '').toLowerCase();
+    if (txt.indexOf('antrekan') > -1 ||
+        (txt.indexOf('sekarang memutar') > -1 && txt.indexOf('berikutnya') > -1) ||
+        (txt.indexOf('now playing') > -1 && (txt.indexOf('next up') > -1 || txt.indexOf('next in queue') > -1 || txt.indexOf('next from') > -1))) {
+      return true;
+    }
+    return false;
+  }
+
   function hasRealNPVContent() {
+    // Jika panel Antrean/Antrekan masih tampil, BUKAN Info Lagu!
+    if (isQueuePanelVisible()) return false;
     if (q('NPV_Panel_OpenDiv') || q('lyrics-npv-section') || q('npv-artist-link') ||
         q('npv-artist-bio-button') || q('credits-card') || q('canvas-video')) {
       return true;
     }
-    if (q('queue-page')) return false;
     var rsb = getRightSidebarRoot();
     if (!rsb) return false;
-    if (rsb.querySelector('img, video, canvas')) return true;
-    var txt = (rsb.textContent || '').trim();
-    return txt.length > 20;
+    var txt = (rsb.textContent || '').toLowerCase();
+    if (txt.indexOf('tentang artis') > -1 || txt.indexOf('about the artist') > -1 ||
+        txt.indexOf('pratinjau lirik') > -1 || txt.indexOf('lyrics preview') > -1 ||
+        txt.indexOf('kredit') > -1 || txt.indexOf('credits') > -1 ||
+        txt.indexOf('pendengar bulanan') > -1 || txt.indexOf('monthly listeners') > -1) {
+      return true;
+    }
+    if (rsb.querySelector('img, video, canvas') && txt.trim().length > 15) return true;
+    return txt.trim().length > 30;
+  }
+
+  function findQueueCloseButton() {
+    var rsb = getRightSidebarRoot();
+    if (!rsb) return null;
+    return rsb.querySelector('button[aria-label="Tutup"], button[aria-label="Close"]');
   }
 
   function activateNPVPanel(seq) {
@@ -968,7 +996,7 @@
         if (npvb) {
           npvb.click();
         } else {
-          var xBtn = document.querySelector('[data-testid="queue-page"] button[aria-label="Tutup"], [data-testid="queue-page"] button[aria-label="Close"]');
+          var xBtn = findQueueCloseButton();
           if (xBtn) xBtn.click();
           else if (qb && isQueueBtnActive(qb)) qb.click();
         }
@@ -976,11 +1004,11 @@
         return;
       }
 
-      // Di step 4 (~600ms), hanya klik ulang jika panel benar-benar tertutup (bukan sedang memuat!) atau masih nyangkut di queue-page
+      // Di step 4 (~600ms), hanya klik ulang jika masih nyangkut di panel Antrekan atau sidebar benar-benar tertutup
       if (step === 4 && !retried) {
         retried = true;
-        if (q('queue-page')) {
-          var qx = document.querySelector('[data-testid="queue-page"] button[aria-label="Tutup"], [data-testid="queue-page"] button[aria-label="Close"]');
+        if (isQueuePanelVisible()) {
+          var qx = findQueueCloseButton();
           if (qx) qx.click();
           else if (qb) qb.click();
           setTimeout(function () {
@@ -1153,9 +1181,8 @@
     function launch() {
       if (seq !== qHarvestSeq || !html.classList.contains('sm-queue')) return;
       var qb = findQueueButton();
-      var already = Boolean(q('queue-page'));
-      if (!already && qb && !isQueueBtnActive(qb)) qb.click();
-      else if (!already && qb) qb.click();
+      var already = isQueuePanelVisible();
+      if (!already && qb) qb.click();
       harvestAndShowSplit(seq);
     }
 
