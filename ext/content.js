@@ -280,14 +280,14 @@
   }
 
   // ===== UI STATE & REFS =====
-  var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, btnPBack, qHdr, qTitleEl, qCls;
+  var root, homeHdr, btnBrand, btnProf, btnSBack, btnSGo, btnPBack, qHdr, tabQueue, tabInfo, qCls;
   var miniEl, mArt, mTitle, mArtist, mLike, mPP, mPFill;
   var navHome, navSearch, navLib;
   var npEl, npDown, npRaw, npCtx, npArt, npTitle, npArtist, npLike;
   var npSBar, npSFill, npCurTm, npDurTm;
   var npShuf, npPrev, npPP, npNext, npRep;
   var volWrap, volBar, volFill, volPct;
-  var btnVol, btnLyrics, btnQueue, btnInfo, btnBackMob, toastEl;
+  var btnVol, btnLyrics, btnQueue, btnBackMob, toastEl;
 
   var seeking = false, seekHoldUntil = 0, seekRatio = 0, curDur = 0;
   var draggingVol = false;
@@ -636,10 +636,15 @@
     updateNavHighlight();
   }
 
+  function syncPanelTabs() {
+    if (tabQueue) tabQueue.classList.toggle('act', panelMode === 'queue');
+    if (tabInfo) tabInfo.classList.toggle('act', panelMode === 'info');
+  }
+
   function openQueue() {
     panelMode = 'queue';
     var qb = findQueueButton();
-    if (qTitleEl) qTitleEl.textContent = 'Antrean';
+    syncPanelTabs();
     html.classList.remove('sm-np', 'sm-lib', 'sm-search');
     html.classList.add('sm-queue');
     updateNavHighlight();
@@ -671,15 +676,17 @@
       showToast('Info lagu & Canvas belum tersedia');
       return;
     }
-    if (qTitleEl) qTitleEl.textContent = 'Info Lagu';
+    syncPanelTabs();
     html.classList.remove('sm-np', 'sm-lib', 'sm-search');
     html.classList.add('sm-queue');
     updateNavHighlight();
     if (npvb) {
-      if (qb && isQueueBtnActive(qb)) qb.click();
-      if (!isQueueBtnActive(npvb)) npvb.click();
+      if (qb && isQueueBtnActive(qb) && isQueueBtnActive(npvb)) {
+        qb.click();
+      } else if (!isQueueBtnActive(npvb)) {
+        npvb.click();
+      }
     } else if (qb) {
-      // Jika tombol NPV tersembunyi, buka panel kanan lalu tutup tab antrean agar berpindah ke Info/Canvas
       if (!isQueueBtnActive(qb)) qb.click();
       setTimeout(function () {
         var xBtn = document.querySelector('[data-testid="queue-page"] button[aria-label="Tutup"], [data-testid="queue-page"] button[aria-label="Close"]');
@@ -852,14 +859,16 @@
     btnPBack.setAttribute('aria-label', 'Kembali');
     btnPBack.appendChild(svgIcon(IC.back, 20));
 
-    // Queue / Info top header
+    // Queue / Info combined top header (2 tabs + 1 close button)
     qHdr = el('div', 'sm-qhdr');
-    qTitleEl = el('span', '', '', 'Antrean');
-    qHdr.appendChild(qTitleEl);
+    var qTabs = el('div', 'sm-qtabs');
+    tabQueue = el('button', 'sm-qtab-q', 'sm-qtab act', 'Antrean');
+    tabInfo = el('button', 'sm-qtab-i', 'sm-qtab', 'Info Lagu');
+    qTabs.append(tabQueue, tabInfo);
     qCls = el('button', 'sm-qcls');
     qCls.setAttribute('aria-label', 'Tutup');
     qCls.appendChild(svgIcon(IC.close, 19));
-    qHdr.appendChild(qCls);
+    qHdr.append(qTabs, qCls);
 
     // ===== FLOATING MINI PLAYER =====
     miniEl = el('div', 'sm-mini');
@@ -993,12 +1002,9 @@
     btnLyrics.append(svgIcon(IC.lyrics, 17), el('span', '', '', 'Lirik'));
 
     btnQueue = el('button', 'sm-np-q');
-    btnQueue.append(svgIcon(IC.queue, 16), el('span', '', '', 'Antrean'));
+    btnQueue.append(svgIcon(IC.queue, 17), el('span', '', '', 'Antrean'));
 
-    btnInfo = el('button', 'sm-np-info');
-    btnInfo.append(svgIcon(IC.info, 16), el('span', '', '', 'Info'));
-
-    npFoot.append(btnVol, btnLyrics, btnQueue, btnInfo);
+    npFoot.append(btnVol, btnLyrics, btnQueue);
 
     npBottom.append(npMeta, npProg, npCtl, volWrap, npFoot);
     npEl.append(npTop, npArtWrap, npBottom);
@@ -1173,7 +1179,8 @@
     });
 
     btnQueue.addEventListener('click', openQueue);
-    btnInfo.addEventListener('click', openInfo);
+    tabQueue.addEventListener('click', openQueue);
+    tabInfo.addEventListener('click', openInfo);
     qCls.addEventListener('click', closeQueue);
 
     // Bottom Navigation

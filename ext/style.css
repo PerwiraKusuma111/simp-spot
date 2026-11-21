@@ -486,7 +486,7 @@ html.sm:not(.sm-search):not(.sm-lib):not(.sm-queue):not(.sm-np) #sm-pback.show {
   display: inline-flex;
 }
 
-/* Header overlay Antrean */
+/* Header overlay Antrean & Info Lagu (gabungan 2 tab + 1 tombol X) */
 #sm-qhdr {
   display: none;
   position: fixed;
@@ -497,16 +497,41 @@ html.sm:not(.sm-search):not(.sm-lib):not(.sm-queue):not(.sm-np) #sm-pback.show {
   background: #121212;
   border-bottom: 1px solid #242424;
   z-index: 2147482996;
-  padding: 0 calc(14px * var(--sm-k));
+  padding: 0 calc(12px * var(--sm-k));
   align-items: center;
   justify-content: space-between;
+  gap: calc(10px * var(--sm-k));
   color: #fff;
-  font-size: calc(16px * var(--sm-k));
-  font-weight: 700;
 }
 
 html.sm.sm-queue #sm-qhdr {
   display: flex;
+}
+
+#sm-qtabs {
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--sm-k));
+  flex: 1;
+  min-width: 0;
+}
+
+.sm-qtab {
+  border: 0;
+  border-radius: 999px;
+  background: #242424;
+  color: #b3b3b3;
+  height: calc(32px * var(--sm-k));
+  padding: 0 calc(14px * var(--sm-k));
+  font-size: calc(13px * var(--sm-k));
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sm-qtab.act {
+  background: #fff;
+  color: #000;
 }
 
 #sm-qcls {
@@ -521,6 +546,7 @@ html.sm.sm-queue #sm-qhdr {
   justify-content: center;
   cursor: pointer;
   padding: 0;
+  flex: none;
 }
 
 /* ===== FLOATING MINI PLAYER (SPOTIFY MOBILE STYLE) ===== */
@@ -974,17 +1000,17 @@ html.sm.sm-np #sm-np {
   font-variant-numeric: tabular-nums;
 }
 
-/* Bottom Actions Row (Volume, Lirik, Antrean, Info) */
+/* Bottom Actions Row (Volume, Lirik, Antrean) */
 #sm-np-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: calc(7px * var(--sm-k));
+  gap: calc(10px * var(--sm-k));
 }
 
 #sm-np-foot button {
   flex: 1;
-  height: calc(36px * var(--sm-k));
+  height: calc(38px * var(--sm-k));
   border: 0;
   border-radius: calc(999px * var(--sm-k));
   background: rgba(255, 255, 255, 0.09);
@@ -992,11 +1018,11 @@ html.sm.sm-np #sm-np {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: calc(5px * var(--sm-k));
-  font-size: calc(11.5px * var(--sm-k));
+  gap: calc(6px * var(--sm-k));
+  font-size: calc(12px * var(--sm-k));
   font-weight: 600;
   cursor: pointer;
-  padding: 0 calc(6px * var(--sm-k));
+  padding: 0 calc(10px * var(--sm-k));
   white-space: nowrap;
 }
 
