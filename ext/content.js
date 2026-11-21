@@ -538,26 +538,27 @@
     if (!html.classList.contains('sm-queue')) return false;
     var mv = document.getElementById('main-view');
 
-    // 1. Jika Antrean terbuka langsung di dalam #main-view (/queue), jangan tutupi #main-view
-    var qp = q('queue-page');
-    if (location.pathname.indexOf('/queue') === 0 || (qp && mv && mv.contains(qp))) {
+    // 1. Jika Spotify membuka halaman penuh /queue di #main-view, biarkan #main-view menampilkannya
+    if (location.pathname.indexOf('/queue') === 0) {
       var old = document.querySelectorAll('.sm-qpanel');
       for (var i = 0; i < old.length; i++) old[i].classList.remove('sm-qpanel');
       return true;
     }
 
-    // 2. Cari panel kanan yang BENAR-BENAR berisi antrean (bukan kontainer kosong!)
+    // 2. Cari panel antrean yang BENAR-BENAR berisi konten (baik di luar maupun panel samping di dalam #main-view)
+    var qp = q('queue-page');
+    var sideAside = document.querySelector('aside[aria-label*="Antrean"], aside[aria-label*="Queue"], [role="complementary"]');
     var candidates = [
       qp,
+      sideAside,
       document.getElementById('Desktop_PanelContainer_Id'),
       document.querySelector('.Root__right-sidebar'),
-      q('right-sidebar-container'),
-      document.querySelector('aside[aria-label*="Antrean"], aside[aria-label*="Queue"], [role="complementary"]')
+      q('right-sidebar-container')
     ];
     var anchor = null;
     for (var c = 0; c < candidates.length; c++) {
       var cand = candidates[c];
-      if (!cand || (mv && mv.contains(cand))) continue;
+      if (!cand || cand === mv) continue;
       if (hasQueueContent(cand)) {
         anchor = cand;
         break;
@@ -566,11 +567,19 @@
     if (!anchor) return false;
 
     var panel = anchor;
-    while (panel.parentElement && panel.parentElement !== document.body &&
-           (!mv || !panel.parentElement.contains(mv))) {
-      panel = panel.parentElement;
+    if (mv && mv.contains(anchor)) {
+      // Panel samping ada di dalam #main-view: naik sampai elemen anak langsung di bawah #main-view atau <aside>
+      while (panel.parentElement && panel.parentElement !== mv && panel.tagName !== 'ASIDE') {
+        if (panel.parentElement.contains(q('home-page') || mv.querySelector('main'))) break;
+        panel = panel.parentElement;
+      }
+    } else {
+      while (panel.parentElement && panel.parentElement !== document.body &&
+             (!mv || !panel.parentElement.contains(mv))) {
+        panel = panel.parentElement;
+      }
     }
-    if (panel && (!mv || !panel.contains(mv))) {
+    if (panel && panel !== mv && (!mv || !panel.contains(mv))) {
       panel.classList.add('sm-qpanel');
       return true;
     }
@@ -1089,7 +1098,11 @@
         showToast('Lirik tidak tersedia untuk lagu ini');
         return;
       }
+      var qb = findQueueButton();
+      if (qb && isQueueBtnActive(qb)) qb.click();
       html.classList.remove('sm-np', 'sm-lib', 'sm-queue', 'sm-search');
+      var tagged = document.querySelectorAll('.sm-qpanel');
+      for (var i = 0; i < tagged.length; i++) tagged[i].classList.remove('sm-qpanel');
       lb.click();
       updateNavHighlight();
     });
