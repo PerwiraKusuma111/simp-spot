@@ -1,12 +1,15 @@
 {
   "manifest_version": 2,
   "name": "Spotify Mobile Mode",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "description": "Ubah tampilan Spotify Web Desktop jadi mirip aplikasi Spotify Mobile lengkap dengan slider lagu, Now Playing fullscreen, navigasi bawah, cari, koleksi, lirik, dan antrean",
   "browser_specific_settings": {
     "gecko": {
       "id": "simp-spot@perwirakusuma111.github.io",
-      "strict_min_version": "126.0"
+      "strict_min_version": "126.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
     },
     "gecko_android": {
       "strict_min_version": "126.0"

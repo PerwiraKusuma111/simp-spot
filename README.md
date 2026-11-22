@@ -1,4 +1,4 @@
-# simp-spot — Spotify Mobile Mode (v1.6.3)
+# simp-spot — Spotify Mobile Mode (v1.6.4)
 
 Ekstensi browser Android (**Microsoft Edge Canary**, **Quetta**, **Kiwi**, **Mises**, dan **Firefox Android / Nightly / Fennec / Iceraven / Mull**) yang mengubah tampilan **Spotify Web Desktop** (`https://open.spotify.com`) menjadi tampilan **Spotify Mobile** lengkap dengan semua kontrol pemutar yang berfungsi penuh dan ringan.
 
@@ -14,11 +14,11 @@ Ekstensi browser Android (**Microsoft Edge Canary**, **Quetta**, **Kiwi**, **Mis
 - **Desktop UA Otomatis khusus Spotify** — Spotify Web langsung jalan penuh di HP (Chrome Desktop UA untuk Chromium, Firefox Desktop UA untuk Firefox Android) tanpa harus mengaktifkan mode Situs Desktop untuk website lain.
 - **Anti Pinch-Zoom & Pengaturan Skala** — bisa diatur kapan saja lewat popup ekstensi.
 
-## Download (v1.6.3)
+## Download (v1.6.4)
 - **GitHub Releases:** https://github.com/PerwiraKusuma111/simp-spot/releases/latest
-- **Firefox Android / Nightly / Fennec / Iceraven (.xpi):** https://github.com/PerwiraKusuma111/simp-spot/raw/v1.6.3/simp-spot-firefox.xpi
-- **Edge Canary Android (.crx):** https://github.com/PerwiraKusuma111/simp-spot/raw/v1.6.3/spotify-mobile-ext.crx
-- **Quetta / Kiwi / Mises (.zip):** https://github.com/PerwiraKusuma111/simp-spot/raw/v1.6.3/spotify-mobile-ext.zip
+- **Firefox Android / Nightly / Fennec / Iceraven (.xpi):** https://github.com/PerwiraKusuma111/simp-spot/raw/v1.6.4/simp-spot-firefox.xpi
+- **Edge Canary Android (.crx):** https://github.com/PerwiraKusuma111/simp-spot/raw/v1.6.4/spotify-mobile-ext.crx
+- **Quetta / Kiwi / Mises (.zip):** https://github.com/PerwiraKusuma111/simp-spot/raw/v1.6.4/spotify-mobile-ext.zip
 
 ## Cara Pasang
 1. **Firefox Android (Nightly / Beta / Fennec / Iceraven / Mull):**
