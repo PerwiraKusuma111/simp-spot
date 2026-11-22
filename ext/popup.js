@@ -1,3 +1,5 @@
+const api = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
+
 const DEFAULTS = {
   enabled: true,
   desktopUA: true,
@@ -29,10 +31,23 @@ function renderZoom(v) {
 }
 
 function save(obj) {
-  chrome.storage.local.set(obj);
+  try {
+    api.storage.local.set(obj);
+  } catch (e) {}
 }
 
-chrome.storage.local.get(DEFAULTS, (d) => {
+function loadConfig(cb) {
+  try {
+    const res = api.storage.local.get(DEFAULTS, (d) => cb(d || DEFAULTS));
+    if (res && typeof res.then === 'function') {
+      res.then((d) => cb(d || DEFAULTS), () => cb(DEFAULTS));
+    }
+  } catch (e) {
+    cb(DEFAULTS);
+  }
+}
+
+loadConfig((d) => {
   elEnabled.checked = Boolean(d.enabled);
   elDesktopUA.checked = Boolean(d.desktopUA);
   elNoZoom.checked = Boolean(d.noZoom);
@@ -79,8 +94,17 @@ zbtns.forEach((b) => {
 });
 
 elBtn.addEventListener('click', () => {
-  chrome.runtime.sendMessage({ type: 'APPLY', reload: true, resetZoom: Number(elZVal.textContent === 'Auto') === 1 }, () => {
+  const payload = { type: 'APPLY', reload: true, resetZoom: Number(elZVal.textContent === 'Auto') === 1 };
+  const done = () => {
     elSt.textContent = 'Tersimpan & Spotify di-reload';
     setTimeout(() => { elSt.textContent = ''; }, 2000);
-  });
+  };
+  try {
+    const res = api.runtime.sendMessage(payload, done);
+    if (res && typeof res.then === 'function') {
+      res.then(done, done);
+    }
+  } catch (e) {
+    done();
+  }
 });

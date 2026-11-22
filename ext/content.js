@@ -66,21 +66,35 @@
     if (cfg.enabled && cfg.noZoom) ev.preventDefault();
   }, { passive: false });
 
+  var extApi = (typeof browser !== 'undefined' && browser.storage) ? browser : (typeof chrome !== 'undefined' ? chrome : null);
+
+  function saveExtCfg(obj) {
+    try {
+      if (extApi && extApi.storage && extApi.storage.local) {
+        extApi.storage.local.set(obj);
+      }
+    } catch (e) {}
+  }
+
   try {
-    chrome.storage.local.get({ enabled: true, noZoom: true, scale: 100 }, function (d) {
-      if (!d) return;
-      cfg.enabled = Boolean(d.enabled);
-      cfg.noZoom = Boolean(d.noZoom);
-      cfg.scale = Number(d.scale) || 100;
-      applyConfig();
-    });
-    chrome.storage.onChanged.addListener(function (changes, area) {
-      if (area !== 'local') return;
-      if (changes.enabled) cfg.enabled = Boolean(changes.enabled.newValue);
-      if (changes.noZoom) cfg.noZoom = Boolean(changes.noZoom.newValue);
-      if (changes.scale) cfg.scale = Number(changes.scale.newValue) || 100;
-      applyConfig();
-    });
+    if (extApi && extApi.storage && extApi.storage.local) {
+      var applyStored = function (d) {
+        if (!d) return;
+        cfg.enabled = Boolean(d.enabled);
+        cfg.noZoom = Boolean(d.noZoom);
+        cfg.scale = Number(d.scale) || 100;
+        applyConfig();
+      };
+      var p = extApi.storage.local.get({ enabled: true, noZoom: true, scale: 100 }, applyStored);
+      if (p && typeof p.then === 'function') p.then(applyStored, function () {});
+      extApi.storage.onChanged.addListener(function (changes, area) {
+        if (area !== 'local') return;
+        if (changes.enabled) cfg.enabled = Boolean(changes.enabled.newValue);
+        if (changes.noZoom) cfg.noZoom = Boolean(changes.noZoom.newValue);
+        if (changes.scale) cfg.scale = Number(changes.scale.newValue) || 100;
+        applyConfig();
+      });
+    }
   } catch (e) {}
 
   // ===== HELPERS =====
@@ -2069,7 +2083,7 @@
       closeSheet();
       cfg.enabled = false;
       applyConfig();
-      try { chrome.storage.local.set({ enabled: false }); } catch (e) {}
+      saveExtCfg({ enabled: false });
     });
 
     npDown.addEventListener('click', function () {
@@ -2319,7 +2333,7 @@
     btnBackMob.addEventListener('click', function () {
       cfg.enabled = true;
       applyConfig();
-      try { chrome.storage.local.set({ enabled: true }); } catch (e) {}
+      saveExtCfg({ enabled: true });
     });
 
     updateNavHighlight();
